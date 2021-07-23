@@ -1,10 +1,9 @@
 
-eukprot_refdb_regex_taxon="^[^-]+-([^-]+)-.*$"
-eukprot_refdb_regex_marker="^[^-]+-[^-]+-(.*)$"
+eukprot_refdb_regex_taxon = "^[a-z]+-(.*_[a-z-]+(?:_.*)?)-[0-9]+at2759-[A-Z]\d$|^[a-z]+-(.*)...Collapse.*$"
+eukprot_refdb_regex_marker = "^[a-z]+-.*_[a-z-]+(?:_.*)?-([0-9]+at2759-[A-Z]\d)$|^[a-z]+-.*(..Collapse.*)$"
 
 chocophlan_refdb_regex_taxon="s__(.*?)\\|"
 chocophlan_refdb_regex_marker="(UniRef90[^|]*)"
-
 
 no_split_regex_taxon="(^)"
 no_split_regex_marker="(.*)"

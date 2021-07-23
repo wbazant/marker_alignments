@@ -23,21 +23,48 @@ def multiple_matches_weighing(read): #pysam.AlignedSegment
 def contribution_to_marker_coverage(read, marker_length):
     return round(1.0 * read.infer_query_length() / marker_length, 6)
 
-def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker):
+def next_g(search):
+    return next(g for g in search.groups() if g is not None);
+
+def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_taxon_id):
+    taxon_id = marker_to_taxon_id[reference_name] if reference_name in marker_to_taxon_id else None
+
+    taxon_search = pattern_taxon.search(reference_name)
+    if taxon_search and taxon_id:
+        taxon = "|".join([taxon_id, next_g(taxon_search)])
+    elif taxon_search:
+        taxon = next_g(taxon_search)
+    elif taxon_id:
+        taxon = taxon_id
+    else:
+        taxon = None
+
+    marker_search = pattern_marker.search(reference_name)
+    if marker_search:
+        marker=next_g(marker_search)
+    elif taxon_search:
+        # Regexes seem to work, just not this one 
+        marker = None
+    else:
+        marker = reference_name
+    return (taxon, marker)
+
+
+def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker, marker_to_taxon_id):
 
     alignment_store = AlignmentStore(db_path=sqlite_db_path)
     alignment_store.start_bulk_write()
 
     for read in alignment_file.fetch():
-        taxon_search = pattern_taxon.search(read.reference_name)
-        if not taxon_search:
+        (taxon, marker) = taxon_and_marker(read.reference_name, pattern_taxon, pattern_marker, marker_to_taxon_id)
+        if not taxon:
             raise ValueError("Could not find taxon in reference name: " + read.reference_name)
-        marker_search = pattern_marker.search(read.reference_name)
-        if not marker_search:
+        if not marker:
             raise ValueError("Could not find marker in reference name: " + read.reference_name)
+
         alignment_store.add_alignment(
-          taxon = next(g for g in taxon_search.groups() if g is not None),
-          marker = next(g for g in marker_search.groups() if g is not None),
+          taxon = taxon,
+          marker = marker,
           query = read.query_name,
           weight = multiple_matches_weighing(read),
           coverage = contribution_to_marker_coverage(read, alignment_file.get_reference_length(read.reference_name)),
@@ -45,6 +72,14 @@ def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marke
 
     alignment_store.end_bulk_write()
     return alignment_store
+
+def read_marker_to_taxon_id(path):
+    result = {}
+    with open(path, 'r') as f:
+        for line in f:
+            (marker, taxon_id) = line.rstrip().split("\t")
+            result[marker] = taxon_id
+    return result
 
 output_type_options = ["marker_coverage", "marker_read_count", "marker_cpm", "marker_all", "taxon_coverage", "taxon_read_and_marker_count", "taxon_cpm", "taxon_all"]
 
@@ -55,9 +90,10 @@ def main(argv=sys.argv[1:]):
     )
     parser.add_argument("--input", type=str, action="store", dest="input_alignment_file", help = "Input SAM/BAM", required=True)
     parser.add_argument("--sqlite-db-path", type=str, action="store", dest="sqlite_db_path", help = "Store a sqlite database under this path instead of in memory", default=None)
-    parser.add_argument("--refdb-format", type=str, action="store", dest="refdb_format", help = "Reference database used for alignment, required for parsing reference names. Supported values: eukprot, chocophlan, generic (no split into marker and taxon)", default="generic")
+    parser.add_argument("--refdb-format", type=str, action="store", dest="refdb_format", help = "Reference database used for alignment, required for parsing reference names. Supported values: eukprot, chocophlan, generic, no-split (no split into marker and taxon)", default="generic")
     parser.add_argument("--refdb-regex-taxon", type=str, action="store", dest="refdb_regex_taxon", help = "Regex to read taxon name from reference name")
     parser.add_argument("--refdb-regex-marker", type=str, action="store", dest="refdb_regex_marker", help = "Regex to read marker name from reference name")
+    parser.add_argument("--refdb-marker-to-taxon-id-path", type=str, action="store", dest="refdb_marker_to_taxon_id_path", help = "Lookup file, two columns - marker name, taxon name")
     parser.add_argument("--num-reads", type=int, action="store", dest="num_reads", help = "Total number of reads (required for CPM output)")
     parser.add_argument("--output-type", type=str, action="store", dest="output_type", help = "output type: "+", ".join(output_type_options), default = "marker_coverage")
     parser.add_argument("--output", type=str, action="store", dest="output_path", help = "output path", required=True)
@@ -84,6 +120,7 @@ def main(argv=sys.argv[1:]):
     alignment_store = read_alignments(
       alignment_file = pysam.AlignmentFile(options.input_alignment_file),
       sqlite_db_path = options.sqlite_db_path,
+      marker_to_taxon_id = read_marker_to_taxon_id(options.refdb_marker_to_taxon_id_path) if options.refdb_marker_to_taxon_id_path else {},
       pattern_taxon = re.compile(options.refdb_regex_taxon),
       pattern_marker = re.compile(options.refdb_regex_marker),
     )

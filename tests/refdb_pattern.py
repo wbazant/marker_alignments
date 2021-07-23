@@ -23,6 +23,9 @@ class ParseArgs(unittest.TestCase):
 
     def test_eukprot(self):
         match_expected(self, "eukprot", "protist-Piridium_sociabile-418107at2759-S1", "Piridium_sociabile", "418107at2759-S1")
+        match_expected(self, "eukprot", "protist-Entamoeba_dispar_SAW760_SSCollapse_SP3", "Entamoeba_dispar_SAW760", "SSCollapse_SP3")
+        match_expected(self, "eukprot", "protist-Pseudo-nitzschia_delicatissima-1309031at2759-D1", "Pseudo-nitzschia_delicatissima", "1309031at2759-D1")
+        match_expected(self, "eukprot", "protist-Entamoeba_histolytica_HM-1IMSS-1032689at2759-S1", "Entamoeba_histolytica_HM-1IMSS", "1032689at2759-S1")
 
     def test_chocophlan(self):
         match_expected(self, "chocophlan", "39777__C4FSF9__HMPREF9321_0278|k__Bacteria.p__Firmicutes.c__Negativicutes.o__Veillonellales.f__Veillonellaceae.g__Veillonella.s__Veillonella_atypica|UniRef90_C4FSF9|UniRef50_D6KRB8|993", "Veillonella_atypica", "UniRef90_C4FSF9")
