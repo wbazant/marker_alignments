@@ -6,15 +6,16 @@ Alignments to marker genes are frequently used in shotgun metagenomics to quanti
 `marker_alignments` is a versatile and memory-efficient tool for working with alignments to marker genes. It uses a package `pysam` to read the files, so all common alignment formats should be supported. In addition to a few different outputs, you can also keep an intermediate database, and query it however you like.
 
 ## Install
+First clone this repository, then install locally:
 ```
-pip3 install marker_alignments
+pip3 install .
 ```
 
 ## Usage
 This is the most basic program:
 
 ```
-process_marker_alignments --input tests/data/example.sam --output /dev/stdout
+summarize_marker_alignments --input tests/data/example.sam --output /dev/stdout
 ```
 
 It produces a coverage report for each reference in the alignments file.
@@ -31,7 +32,7 @@ bowtie2 --omit-sec-seq --no-discordant --no-unal \
   -2 ERR2749179_2.fastq \
   -S ERR2749179-eukprot.sam 
 
-process_marker_alignments --input ERR2749179-eukprot.sam --output ERR2749179-eukprot-taxa.tsv \
+summarize_marker_alignments --input ERR2749179-eukprot.sam --output ERR2749179-eukprot-taxa.tsv \
   --refdb-format eukprot \
   --output-type taxon_all \
   --num-reads $(grep -c '^@' ERR2749179_1.fastq) \
