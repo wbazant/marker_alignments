@@ -135,7 +135,7 @@ def main(argv=sys.argv[1:]):
         header = ["taxon", "marker", "marker_cpm"]
         lines = alignment_store.as_marker_cpm(options.num_reads)
     elif options.output_type == "marker_all":
-        header = ["taxon", "marker", "marker_coverage", "marker_read_count", "marker_cpm"]
+        header = ["taxon", "marker", "marker_coverage", "marker_cpm", "marker_read_count"]
         lines = alignment_store.as_marker_all(options.num_reads)
     elif options.output_type == "taxon_coverage":
         header = ["taxon", "coverage"]
