@@ -22,7 +22,7 @@ It produces a coverage report for each reference in the alignments file.
 
 With information about reference format and number of reads used for the alignment, we can additionally attempt to quantify different taxa using the markers.
 
-Here is how we can align a FASTA to EukProt, a reference database bundled with [EukDetect](https://github.com/allind/EukDetect), then summarise it at taxon level:
+Here is how we can align a FASTA to a reference database bundled with [EukDetect](https://github.com/allind/EukDetect), then summarise it at taxon level:
 
 ```
 
