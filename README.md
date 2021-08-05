@@ -59,7 +59,7 @@ markers = [ marker for marker in alignment_store.query('select distinct marker f
 ### Custom refdb
 The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-id-path`.
 ## Known issues
-Quantitative information obtained by algining to EukProt might be a little bit dodgy since there are typically very few reads, and EukDetect was not designed for that.
+Quantitative information obtained by aligning to a EukDetect reference database might be a little bit dodgy since there are typically very few reads.
 
 
 For a large enough file, the sqlite query engine runs out of page numbers when doing a `group by`. In [my fork of HuMAnN with similar query code](https://github.com/wbazant/humann/commit/1dc767f855) I have solved this by adding `'PRAGMA max_page_count = 4294967292;'` before the `group by`. I've not yet ran into this issue when using this package.
@@ -67,5 +67,5 @@ For a large enough file, the sqlite query engine runs out of page numbers when d
 ## Credits
 I took the method of splitting multiple aligned reads by a weighted average (with the second power of match identity as weights), and the method of calculating CPMs, from HuMAnN.
 I was inspired by how MetaPhlAn calculates taxon CPMs from marker CPMs, although they have more options and I just ported the simple one.
-I copied the package setup from EukDetect.
+I copied the package setup from EukDetect, and developed the package mostly in the context of alignments to the EukDetect reference.
 An idea for what outputs might be useful to users comes jointly from these three tools.
