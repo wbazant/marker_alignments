@@ -57,7 +57,7 @@ alignment_store = read_alignments(
 markers = [ marker for marker in alignment_store.query('select distinct marker from alignment order by -coverage')]
 ```
 ### Custom refdb
-The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-id-path`.
+The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-path`.
 ## Known issues
 Quantitative information obtained by aligning to a EukDetect reference database might be a little bit dodgy since there are typically very few reads.
 

@@ -26,16 +26,16 @@ def contribution_to_marker_coverage(read, marker_length):
 def next_g(search):
     return next(g for g in search.groups() if g is not None);
 
-def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_taxon_id):
-    taxon_id = marker_to_taxon_id[reference_name] if reference_name in marker_to_taxon_id else None
+def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_taxon):
+    taxon = marker_to_taxon[reference_name] if reference_name in marker_to_taxon else None
 
     taxon_search = pattern_taxon.search(reference_name)
-    if taxon_search and taxon_id:
-        taxon = "|".join([taxon_id, next_g(taxon_search)])
+    if taxon_search and taxon:
+        taxon = "|".join([taxon, next_g(taxon_search)])
     elif taxon_search:
         taxon = next_g(taxon_search)
-    elif taxon_id:
-        taxon = taxon_id
+    elif taxon:
+        taxon = taxon
     else:
         taxon = None
 
@@ -50,13 +50,13 @@ def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_ta
     return (taxon, marker)
 
 
-def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker, marker_to_taxon_id):
+def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker, marker_to_taxon):
 
     alignment_store = AlignmentStore(db_path=sqlite_db_path)
     alignment_store.start_bulk_write()
 
     for read in alignment_file.fetch():
-        (taxon, marker) = taxon_and_marker(read.reference_name, pattern_taxon, pattern_marker, marker_to_taxon_id)
+        (taxon, marker) = taxon_and_marker(read.reference_name, pattern_taxon, pattern_marker, marker_to_taxon)
         if not taxon:
             raise ValueError("Could not find taxon in reference name: " + read.reference_name)
         if not marker:
@@ -73,12 +73,12 @@ def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marke
     alignment_store.end_bulk_write()
     return alignment_store
 
-def read_marker_to_taxon_id(path):
+def read_marker_to_taxon(path):
     result = {}
     with open(path, 'r') as f:
         for line in f:
-            (marker, taxon_id) = line.rstrip().split("\t")
-            result[marker] = taxon_id
+            (marker, taxon) = line.rstrip().split("\t")
+            result[marker] = taxon
     return result
 
 output_type_options = ["marker_coverage", "marker_read_count", "marker_cpm", "marker_all", "taxon_coverage", "taxon_read_and_marker_count", "taxon_cpm", "taxon_all"]
@@ -93,7 +93,7 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--refdb-format", type=str, action="store", dest="refdb_format", help = "Reference database used for alignment, required for parsing reference names. Supported values: eukprot, chocophlan, generic, no-split (no split into marker and taxon)", default="generic")
     parser.add_argument("--refdb-regex-taxon", type=str, action="store", dest="refdb_regex_taxon", help = "Regex to read taxon name from reference name")
     parser.add_argument("--refdb-regex-marker", type=str, action="store", dest="refdb_regex_marker", help = "Regex to read marker name from reference name")
-    parser.add_argument("--refdb-marker-to-taxon-id-path", type=str, action="store", dest="refdb_marker_to_taxon_id_path", help = "Lookup file, two columns - marker name, taxon name")
+    parser.add_argument("--refdb-marker-to-taxon-path", type=str, action="store", dest="refdb_marker_to_taxon_path", help = "Lookup file, two columns - marker name, taxon name")
     parser.add_argument("--num-reads", type=int, action="store", dest="num_reads", help = "Total number of reads (required for CPM output)")
     parser.add_argument("--output-type", type=str, action="store", dest="output_type", help = "output type: "+", ".join(output_type_options), default = "marker_coverage")
     parser.add_argument("--output", type=str, action="store", dest="output_path", help = "output path", required=True)
@@ -120,7 +120,7 @@ def main(argv=sys.argv[1:]):
     alignment_store = read_alignments(
       alignment_file = pysam.AlignmentFile(options.input_alignment_file),
       sqlite_db_path = options.sqlite_db_path,
-      marker_to_taxon_id = read_marker_to_taxon_id(options.refdb_marker_to_taxon_id_path) if options.refdb_marker_to_taxon_id_path else {},
+      marker_to_taxon = read_marker_to_taxon(options.refdb_marker_to_taxon_path) if options.refdb_marker_to_taxon_path else {},
       pattern_taxon = re.compile(options.refdb_regex_taxon),
       pattern_marker = re.compile(options.refdb_regex_marker),
     )
