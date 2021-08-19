@@ -40,10 +40,10 @@ class MarkerScores(unittest.TestCase):
               'marker_coverage': [('taxon_1', 'marker_1', 0.111)],
               'marker_cpm': [('taxon_1', 'marker_1', 1.1099999999999999)],
               'marker_read_count': [('taxon_1', 'marker_1', 1.0)],
-              'taxon_all': [('taxon_1', 0.111, 1.1099999999999999, 1.0, 1)],
+              'taxon_all': [('taxon_1', 0.111, 1.1099999999999999, 1.0, 1, 1.0)],
               'taxon_coverage': [('taxon_1', 0.111)],
               'taxon_cpm': [('taxon_1', 1.1099999999999999)],
-              'taxon_read_and_marker_count': [('taxon_1', 1.0, 1)]}
+              'taxon_read_and_marker_count': [('taxon_1', 1.0, 1, 1.0)]}
         )
 
     def test_one_read_two_markers(self):
@@ -60,10 +60,10 @@ class MarkerScores(unittest.TestCase):
                              ('taxon_1', 'marker_2', 3.3300000000000005)],
               'marker_read_count': [('taxon_1', 'marker_1', 0.25),
                                     ('taxon_1', 'marker_2', 0.75)],
-              'taxon_all': [('taxon_1', 0.222, 2.2199999999999998, 1.0, 2)],
+              'taxon_all': [('taxon_1', 0.222, 2.2199999999999998, 1.0, 2, 0.75)],
               'taxon_coverage': [('taxon_1', 0.222)],
               'taxon_cpm': [('taxon_1', 2.2199999999999998)],
-              'taxon_read_and_marker_count': [('taxon_1', 1.0, 2)]}
+              'taxon_read_and_marker_count': [('taxon_1', 1.0, 2, 0.75)]}
         )
 
     def test_one_read_two_markers_with_extra_read(self):
@@ -81,10 +81,10 @@ class MarkerScores(unittest.TestCase):
                              ('taxon_1', 'marker_2', 3.3300000000000005)],
               'marker_read_count': [('taxon_1', 'marker_1', 1.25),
                                     ('taxon_1', 'marker_2', 0.75)],
-              'taxon_all': [('taxon_1', 0.472, 4.72, 2.0, 2)],
+              'taxon_all': [('taxon_1', 0.472, 4.72, 2.0, 2, 1.25)],
               'taxon_coverage': [('taxon_1', 0.472)],
               'taxon_cpm': [('taxon_1', 4.72)],
-              'taxon_read_and_marker_count': [('taxon_1', 2.0, 2)]}
+              'taxon_read_and_marker_count': [('taxon_1', 2.0, 2, 1.25)]}
         )
 
     def test_one_read_weight_does_not_matter(self):
@@ -96,10 +96,10 @@ class MarkerScores(unittest.TestCase):
               'marker_coverage': [('taxon_1', 'marker_1', 0.111)],
               'marker_cpm': [('taxon_1', 'marker_1', 1.1099999999999999)],
               'marker_read_count': [('taxon_1', 'marker_1', 1.0)],
-              'taxon_all': [('taxon_1', 0.111, 1.1099999999999999, 1.0, 1)],
+              'taxon_all': [('taxon_1', 0.111, 1.1099999999999999, 1.0, 1, 1.0)],
               'taxon_coverage': [('taxon_1', 0.111)],
               'taxon_cpm': [('taxon_1', 1.1099999999999999)],
-              'taxon_read_and_marker_count': [('taxon_1', 1.0, 1)]}
+              'taxon_read_and_marker_count': [('taxon_1', 1.0, 1, 1.0)]}
         )
 
     def test_two_reads_one_marker(self):
@@ -112,10 +112,10 @@ class MarkerScores(unittest.TestCase):
               'marker_coverage': [('taxon_1', 'marker_1', 0.223)],
               'marker_cpm': [('taxon_1', 'marker_1', 2.2300000000000004)],
               'marker_read_count': [('taxon_1', 'marker_1', 2.0)],
-              'taxon_all': [('taxon_1', 0.223, 2.2300000000000004, 2.0, 1)],
+              'taxon_all': [('taxon_1', 0.223, 2.2300000000000004, 2.0, 1, 2.0)],
               'taxon_coverage': [('taxon_1', 0.223)],
               'taxon_cpm': [('taxon_1', 2.2300000000000004)],
-              'taxon_read_and_marker_count': [('taxon_1', 2.0, 1)]}
+              'taxon_read_and_marker_count': [('taxon_1', 2.0, 1, 2.0)]}
         )
 
     def test_two_reads_two_markers(self):
@@ -132,10 +132,10 @@ class MarkerScores(unittest.TestCase):
                              ('taxon_1', 'marker_2', 1.22)],
               'marker_read_count': [('taxon_1', 'marker_1', 1.0),
                                     ('taxon_1', 'marker_2', 1.0)],
-              'taxon_all': [('taxon_1', 0.11649999999999999, 1.1649999999999998, 2.0, 2)],
+              'taxon_all': [('taxon_1', 0.11649999999999999, 1.1649999999999998, 2.0, 2, 1.0)],
               'taxon_coverage': [('taxon_1', 0.11649999999999999)],
               'taxon_cpm': [('taxon_1', 1.1649999999999998)],
-              'taxon_read_and_marker_count': [('taxon_1', 2.0, 2)]}
+              'taxon_read_and_marker_count': [('taxon_1', 2.0, 2, 1.0)]}
         )
 
     def test_two_reads_two_taxons(self):
@@ -152,12 +152,12 @@ class MarkerScores(unittest.TestCase):
                              ('taxon_2', 'marker_2', 2.2199999999999998)],
               'marker_read_count': [('taxon_1', 'marker_1', 1.0),
                                     ('taxon_2', 'marker_2', 1.0)],
-              'taxon_all': [('taxon_1', 0.111, 1.1099999999999999, 1.0, 1),
-                            ('taxon_2', 0.222, 2.2199999999999998, 1.0, 1)],
+              'taxon_all': [('taxon_1', 0.111, 1.1099999999999999, 1.0, 1, 1.0),
+                            ('taxon_2', 0.222, 2.2199999999999998, 1.0, 1, 1.0)],
               'taxon_coverage': [('taxon_1', 0.111), ('taxon_2', 0.222)],
               'taxon_cpm': [('taxon_1', 1.1099999999999999),
                             ('taxon_2', 2.2199999999999998)],
-              'taxon_read_and_marker_count': [('taxon_1', 1.0, 1), ('taxon_2', 1.0, 1)]}
+              'taxon_read_and_marker_count': [('taxon_1', 1.0, 1, 1.0), ('taxon_2', 1.0, 1, 1.0)]}
         )
 
 

@@ -67,7 +67,7 @@ taxon_query_template='''
 '''
 
 a_cov = "avg(marker_coverage) as coverage"
-a_tnm = "sum(marker_read_count) as taxon_num_reads, count(marker) as taxon_num_markers"
+a_tnm = "sum(marker_read_count) as taxon_num_reads, count(marker) as taxon_num_markers, max(marker_read_count) as taxon_max_reads_in_marker"
 a_cpm = "avg(marker_coverage) / (?) * 1000000 as cpm"
 taxon_coverage_query=taxon_query_template.format(a_cov, marker_coverage_query)
 taxon_read_and_marker_count_query=taxon_query_template.format(a_tnm, marker_read_count_query)

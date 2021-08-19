@@ -141,13 +141,13 @@ def main(argv=sys.argv[1:]):
         header = ["taxon", "coverage"]
         lines = alignment_store.as_taxon_coverage()
     elif options.output_type == "taxon_read_and_marker_count":
-        header = ["taxon", "taxon_num_reads", "taxon_num_markers"]
+        header = ["taxon", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
         lines = alignment_store.as_taxon_read_and_marker_count()
     elif options.output_type == "taxon_cpm":
         header = ["taxon", "cpm"]
         lines = alignment_store.as_taxon_cpm(options.num_reads)
     elif options.output_type == "taxon_all":
-        header = ["taxon", "coverage", "cpm", "taxon_num_reads", "taxon_num_markers"]
+        header = ["taxon", "coverage", "cpm", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
         lines = alignment_store.as_taxon_all(options.num_reads)
 
     field_formats = {
@@ -160,6 +160,7 @@ def main(argv=sys.argv[1:]):
       "coverage" : ":.6f",
       "taxon_num_reads": ":.6f",
       "taxon_num_markers": ":d",
+      "taxon_max_reads_in_marker": ":.6f",
     }
     formatter="\t".join(['{' + field_formats[field] +'}' for field in header]) + "\n"
     with open(options.output_path, 'w') as f:
