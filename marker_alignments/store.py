@@ -67,12 +67,20 @@ taxon_query_template='''
 '''
 
 a_cov = "avg(marker_coverage) as coverage"
-a_tnm = "sum(marker_read_count) as taxon_num_reads, count(marker) as taxon_num_markers"
+a_tnm = "count(marker) as taxon_num_markers, sum(marker_read_count) as taxon_num_reads"
 a_cpm = "avg(marker_coverage) / (?) * 1000000 as cpm"
 taxon_coverage_query=taxon_query_template.format(a_cov, marker_coverage_query)
 taxon_read_and_marker_count_query=taxon_query_template.format(a_tnm, marker_read_count_query)
 taxon_cpm_query=taxon_query_template.format(a_cpm, marker_coverage_query)
-taxon_all_query=taxon_query_template.format(", ".join([a_cov, a_cpm, a_tnm]), marker_all_query)
+
+taxon_joined_query_template='''
+  select taxon, {}
+  from ({}) join taxon_num_markers_ref using(taxon)
+  group by taxon
+'''
+a_mar = "num_markers_ref as taxon_total_markers, (sum(marker_read_count * marker_read_count) / num_markers_ref - sum(marker_read_count) * sum(marker_read_count) / (num_markers_ref * num_markers_ref)) as taxon_variance"
+taxon_markers_query = taxon_joined_query_template.format(a_mar, marker_all_query)
+taxon_all_query=taxon_joined_query_template.format(", ".join([a_cov, a_cpm, a_tnm, a_mar]), marker_all_query)
 
 class AlignmentStore(SqliteStore):
 
@@ -86,9 +94,16 @@ class AlignmentStore(SqliteStore):
               weight real not null,
               coverage real not null
             );''')
+        self.do('''create table taxon_num_markers_ref (
+              taxon text not null,
+              num_markers_ref integer not null
+            );''')
         
     def add_alignment(self, taxon, marker, query, weight, coverage):
         self.do('insert into alignment (taxon, marker, query, weight, coverage) values (?,?,?,?,?)', [ taxon, marker, query, weight, coverage])
+
+    def add_taxon_num_markers_ref(self, taxon, num_markers):
+        self.do('insert into taxon_num_markers_ref (taxon, num_markers_ref) values (?,?)', [taxon, num_markers])
 
     def as_marker_coverage(self):
         return self.query(marker_coverage_query)
@@ -107,6 +122,9 @@ class AlignmentStore(SqliteStore):
 
     def as_taxon_read_and_marker_count(self):
         return self.query(taxon_read_and_marker_count_query)
+
+    def as_taxon_markers(self):
+        return self.query(taxon_markers_query)
 
     def as_taxon_cpm(self,total_reads):
         return self.query(taxon_cpm_query, [total_reads])

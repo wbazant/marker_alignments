@@ -31,7 +31,7 @@ def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_ta
 
     taxon_search = pattern_taxon.search(reference_name)
     if taxon_search and taxon:
-        taxon = "|".join([taxon, next_g(taxon_search)])
+        taxon = taxon #"|".join([taxon, next_g(taxon_search)])
     elif taxon_search:
         taxon = next_g(taxon_search)
     elif taxon:
@@ -50,7 +50,7 @@ def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_ta
     return (taxon, marker)
 
 
-def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker, marker_to_taxon):
+def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker, marker_to_taxon, taxon_to_num_markers):
 
     alignment_store = AlignmentStore(db_path=sqlite_db_path)
     alignment_store.start_bulk_write()
@@ -70,18 +70,28 @@ def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marke
           coverage = contribution_to_marker_coverage(read, alignment_file.get_reference_length(read.reference_name)),
         )
 
+    for taxon, num_markers in taxon_to_num_markers.items():
+        alignment_store.add_taxon_num_markers_ref(taxon, num_markers)
+
     alignment_store.end_bulk_write()
     return alignment_store
 
 def read_marker_to_taxon(path):
-    result = {}
+    marker_to_taxon = {}
+    taxon_to_num_markers = {}
+    
     with open(path, 'r') as f:
         for line in f:
             (marker, taxon) = line.rstrip().split("\t")
-            result[marker] = taxon
-    return result
 
-output_type_options = ["marker_coverage", "marker_read_count", "marker_cpm", "marker_all", "taxon_coverage", "taxon_read_and_marker_count", "taxon_cpm", "taxon_all"]
+            if taxon not in taxon_to_num_markers:
+                taxon_to_num_markers[taxon] = 0
+            if marker not in marker_to_taxon:
+                 marker_to_taxon[marker] = taxon
+                 taxon_to_num_markers[taxon]+=1
+    return (marker_to_taxon, taxon_to_num_markers)
+
+output_type_options = ["marker_coverage", "marker_read_count", "marker_cpm", "marker_all", "taxon_coverage", "taxon_read_and_marker_count", "taxon_cpm", "taxon_markers", "taxon_all"]
 
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(
@@ -93,7 +103,7 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--refdb-format", type=str, action="store", dest="refdb_format", help = "Reference database used for alignment, required for parsing reference names. Supported values: eukprot, chocophlan, generic, no-split (no split into marker and taxon)", default="generic")
     parser.add_argument("--refdb-regex-taxon", type=str, action="store", dest="refdb_regex_taxon", help = "Regex to read taxon name from reference name")
     parser.add_argument("--refdb-regex-marker", type=str, action="store", dest="refdb_regex_marker", help = "Regex to read marker name from reference name")
-    parser.add_argument("--refdb-marker-to-taxon-path", type=str, action="store", dest="refdb_marker_to_taxon_path", help = "Lookup file, two columns - marker name, taxon name")
+    parser.add_argument("--refdb-marker-to-taxon-path", type=str, action="store", dest="refdb_marker_to_taxon_path", help = "Lookup file, two columns - marker name, taxon name - required for taxon_markers and taxon_all")
     parser.add_argument("--num-reads", type=int, action="store", dest="num_reads", help = "Total number of reads (required for CPM output)")
     parser.add_argument("--output-type", type=str, action="store", dest="output_type", help = "output type: "+", ".join(output_type_options), default = "marker_coverage")
     parser.add_argument("--output", type=str, action="store", dest="output_path", help = "output path", required=True)
@@ -117,13 +127,22 @@ def main(argv=sys.argv[1:]):
     if options.output_type in ["marker_all","marker_cpm", "taxon_all", "taxon_cpm"] and not options.num_reads:
         raise ValueError("--num-reads required for calculating " + options.output_type)
 
+    if options.output_type in ["taxon_all", "taxon_markers"] and not options.refdb_marker_to_taxon_path:
+        raise ValueError("--refdb-marker-to-taxon-path required for calculating " + options.output_type)
+
+    if options.refdb_marker_to_taxon_path:
+        marker_to_taxon, taxon_to_num_markers = read_marker_to_taxon(options.refdb_marker_to_taxon_path)
+    else:
+        marker_to_taxon, taxon_to_num_markers = {},{}
     alignment_store = read_alignments(
       alignment_file = pysam.AlignmentFile(options.input_alignment_file),
       sqlite_db_path = options.sqlite_db_path,
-      marker_to_taxon = read_marker_to_taxon(options.refdb_marker_to_taxon_path) if options.refdb_marker_to_taxon_path else {},
       pattern_taxon = re.compile(options.refdb_regex_taxon),
       pattern_marker = re.compile(options.refdb_regex_marker),
+      marker_to_taxon = marker_to_taxon,
+      taxon_to_num_markers = taxon_to_num_markers,
     )
+
 
     if options.output_type == "marker_coverage":
         header = ["taxon", "marker", "marker_coverage"]
@@ -141,13 +160,16 @@ def main(argv=sys.argv[1:]):
         header = ["taxon", "coverage"]
         lines = alignment_store.as_taxon_coverage()
     elif options.output_type == "taxon_read_and_marker_count":
-        header = ["taxon", "taxon_num_reads", "taxon_num_markers"]
+        header = ["taxon", "taxon_num_markers", "taxon_num_reads", "taxon_square_sum"]
         lines = alignment_store.as_taxon_read_and_marker_count()
     elif options.output_type == "taxon_cpm":
         header = ["taxon", "cpm"]
         lines = alignment_store.as_taxon_cpm(options.num_reads)
+    elif options.output_type == "taxon_markers":
+        header = ["taxon", "taxon_total_markers", "taxon_variance"]
+        lines = alignment_store.as_taxon_markers(options.num_reads)
     elif options.output_type == "taxon_all":
-        header = ["taxon", "coverage", "cpm", "taxon_num_reads", "taxon_num_markers"]
+        header = ["taxon", "coverage", "cpm", "taxon_num_markers", "taxon_num_reads", "taxon_total_markers", "taxon_variance"]
         lines = alignment_store.as_taxon_all(options.num_reads)
 
     field_formats = {
@@ -158,8 +180,10 @@ def main(argv=sys.argv[1:]):
       "marker_read_count": ":.2f",
       "cpm" : ":.6f",
       "coverage" : ":.6f",
-      "taxon_num_reads": ":.6f",
       "taxon_num_markers": ":d",
+      "taxon_num_reads": ":.6f",
+      "taxon_total_markers": ":d",
+      "taxon_variance": ":.6f",
     }
     formatter="\t".join(['{' + field_formats[field] +'}' for field in header]) + "\n"
     with open(options.output_path, 'w') as f:
