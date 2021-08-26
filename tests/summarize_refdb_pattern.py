@@ -1,7 +1,7 @@
 import unittest
 
 import re
-from marker_alignments.refdb_pattern import taxon_and_marker_patterns
+from marker_alignments.summarize.refdb_pattern import taxon_and_marker_patterns
 
 def match_expected(self, refdb_format, input_string, expected_taxon, expected_marker):
     (taxon_p, marker_p) = taxon_and_marker_patterns(refdb_format)

@@ -5,7 +5,7 @@ import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 import re
-from marker_alignments.main import read_alignments
+from marker_alignments.summarize.main import read_alignments
 
 class ReadAlignments(unittest.TestCase):
 

@@ -14,6 +14,6 @@ setuptools.setup(name='marker_alignments',
     author='wbazant',
     author_email='wojciech.bazant@gmail.com',
     license=license,
-    entry_points={"console_scripts": ["summarize_marker_alignments = marker_alignments.main:main"]},
+    entry_points={"console_scripts": ["summarize_marker_alignments = marker_alignments.summarize.main:main"]},
     packages=setuptools.find_packages(),
 )
