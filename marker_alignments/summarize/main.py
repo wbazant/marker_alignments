@@ -85,7 +85,7 @@ output_type_options = ["marker_coverage", "marker_read_count", "marker_cpm", "ma
 
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-      description="marker_alignment - process and summarise alignments of metagenomic sequencing reads to reference databases of marker genes",
+      description="summarize_marker_alignments - process and summarise alignments of metagenomic sequencing reads to reference databases of marker genes",
       formatter_class = argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--input", type=str, action="store", dest="input_alignment_file", help = "Input SAM/BAM", required=True)

@@ -11,7 +11,10 @@ First clone this repository, then install locally:
 pip3 install .
 ```
 
-## Usage
+## Summarize alignments - the `summarize_marker_alignments` tool
+Read an alignment file produced by `bowtie2` or a similar program, and interpret the results in the context of matches to markers and taxa.
+
+### Usage
 This is the most basic program:
 
 ```
@@ -46,7 +49,7 @@ You can also integrate a package into a Python program:
 ```
 import pysam
 import re
-from marker_alignments.main import read_alignments
+from marker_alignments.summarize.main import read_alignments
 
 alignment_store = read_alignments(
   alignment_file = pysam.AlignmentFile("ERR2749179.sam"),
@@ -58,6 +61,20 @@ markers = [ marker for marker in alignment_store.query('select distinct marker f
 ```
 ### Custom refdb
 The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-path`.
+
+## Filter the summary - the `filter_marker_alignments_taxa` tool
+Apply a filter to alignments sumarized at the taxa level.
+
+### Usage
+This is a demo program, which asks for two markers to be present for a taxon
+
+```
+summarize_marker_alignments --input tests/data/example.sam --output /dev/stdout --output-type taxon_read_and_marker_count \
+  | filter_marker_alignments_taxa \
+  --input /dev/stdin --output /dev/stdout \
+  --require-min-markers 2
+```
+
 ## Known issues
 Quantitative information obtained by aligning to a EukDetect reference database might be a little bit dodgy since there are typically very few reads.
 
