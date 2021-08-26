@@ -17,6 +17,7 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--require-min-markers", type=int, action="store", dest="require_min_markers", help = "Require min markers to keep a taxon")
     parser.add_argument("--use-noise-model-with-confidence-threshold", type=float, action="store", dest="noise_threshold", help = "Use a null model where markers associate with taxa at random with the provided confidence threshold, and infer an appropriate value for --require-min-markers")
     parser.add_argument("--total-num-taxa", type=int, action="store", dest="total_num_taxa", help = "Total number of taxa in the reference - required for fitting the noise model")
+    parser.add_argument("--taxon-to-markers-beta-sample-size", type=float, action="store", dest="beta_sample_size", help = "Sample size (sum of shape parameters a and b when proportion of markers per taxon is modelled as a beta distribution) - required for fitting the noise model")
     parser.add_argument("--output", type=str, action="store", dest="output_path", help = "output path", required=True)
     parser.add_argument("--verbose", action="store_true", dest="verbose", help = "turn on logging")
 
@@ -26,6 +27,9 @@ def main(argv=sys.argv[1:]):
 
     if options.noise_threshold and not options.total_num_taxa:
         raise ValueError("--total-num-taxa required if --use-noise-model-with-confidence-threshold is provided")
+
+    if options.noise_threshold and not options.beta_sample_size:
+        raise ValueError("--taxon-to-markers-beta-sample-size required if --use-noise-model-with-confidence-threshold is provided")
 
     lines, fieldnames = [], {}
     with open(options.input_path) as f:
@@ -46,9 +50,9 @@ def main(argv=sys.argv[1:]):
             if n not in taxon_counts_with_num_markers:
                 taxon_counts_with_num_markers[n] = 0
             taxon_counts_with_num_markers[n] += 1
-        cutoff, confidence = cutoff_fit_for_noise_model(taxon_counts_with_num_markers, options.noise_threshold)
+        cutoff, confidence = cutoff_fit_for_noise_model(taxon_counts_with_num_markers, options.beta_sample_size, options.noise_threshold, logger)
         num_markers = sum([j * taxon_counts_with_num_markers[j] for j in taxon_counts_with_num_markers])
-        logger.info("Built a null model of %s markers each independently assigned uniformly at random to one of all %s taxa", num_markers, options.total_num_taxa)
+        logger.info("Built a null model of %s markers assigned to one of all %s taxa through a beta binomial distribution", num_markers, options.total_num_taxa)
         logger.info("In the data, taxa the fewest number of markers probable under the null model with less than --use-noise-model-with-confidence-threshold value %s is %s ", options.noise_threshold, cutoff)
         logger.info("The likelihood of %s taxa with %s markers occuring under the null model was calculated to be %s", taxon_counts_with_num_markers[cutoff], cutoff, confidence )
         if options.require_min_markers and options.require_min_markers > cutoff:

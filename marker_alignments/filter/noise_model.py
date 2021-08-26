@@ -1,7 +1,7 @@
-from scipy.stats import binom
+from scipy.stats import binom, betabinom
 
-def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, noise_threshold):
-    model = fit_noise_model(taxon_counts_with_num_markers)
+def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, noise_threshold, logger):
+    model = fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger)
     ns_above_threshold = [(n,p) for (n,p) in model if p <= noise_threshold]
     if not ns_above_threshold:
         return None
@@ -17,7 +17,7 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, noise_threshold):
 #
 # We address this by fitting a null model to the data, and returning the first value for which
 # the null model no longer fits.
-def fit_noise_model(taxon_counts_with_num_markers):
+def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
     total_num_markers = sum([j * taxon_counts_with_num_markers[j] for j in taxon_counts_with_num_markers])
     num_taxa = sum([taxon_counts_with_num_markers[j] for j in taxon_counts_with_num_markers])
     if num_taxa == 0: return []
@@ -25,23 +25,40 @@ def fit_noise_model(taxon_counts_with_num_markers):
     # suppose (somewhat pessimistically) that there is no information content between markers found
     # and taxa present - the data would be just as good if each marker was independently assigned to a taxon
     # uniformly at random.
-    # Then the number of markers for each taxon can be modelled as a binomially distributed random variable B_i, with:
+    # Then the number of markers for each taxon B_i can be modelled as a binomially distributed random variable, with:
     markers_for_each_taxon_n = total_num_markers
     markers_for_each_taxon_p = 1.0 / num_taxa
 
+    # That actually doesn't fit super well because taxa in the reference have different sizes - 
+    # if we pick a subset of markers at random, some taxa will get more of them than others.
+    # Instead, model B_i as a beta binomial distributed random variable with the same mean.
+
+    # https://en.wikipedia.org/wiki/Beta_distribution#Mean_and_sample_size
+    markers_for_each_taxon_shape_a = markers_for_each_taxon_p * beta_sample_size
+    markers_for_each_taxon_shape_b = (1 - markers_for_each_taxon_p) * beta_sample_size
+
+    
+
+    log=["Distributing {} markers across {} taxa, counts of taxa with k markers are:".format(total_num_markers, num_taxa)]
+    log.append("\t".join(["k", "actual", "expected", "pmf", "p(at least actual)"]))
     results = []
     for num_markers in sorted(taxon_counts_with_num_markers.keys()):
         # there were this many taxa in the dataset
         taxon_count = taxon_counts_with_num_markers[num_markers]
         # null hypothesis: this is not yet above what we expect randomly
         # what's the chance of this happening?
+
+        num_markers_pmf = betabinom.pmf(k = num_markers, n = markers_for_each_taxon_n, a = markers_for_each_taxon_shape_a, b = markers_for_each_taxon_shape_b)
+        # num_markers_pmf = binom.pmf(k = num_markers, n = markers_for_each_taxon_n, p = markers_for_each_taxon_p)
         p = probability_at_least_taxon_count_num_markers_taxa(
-                markers_for_each_taxon_n, markers_for_each_taxon_p,
+                num_markers_pmf,
                 num_taxa, num_markers, taxon_count)
+        log.append("%s\t%s\t%.2f\t%.2g\t%.2g" % (num_markers, taxon_count, round(num_markers_pmf * num_taxa, 2), num_markers_pmf, p ))
         results.append((num_markers, p))
+    logger.info("\n".join(log))
     return results
 
-def probability_at_least_taxon_count_num_markers_taxa(markers_for_each_taxon_n, markers_for_each_taxon_p, num_taxa, num_markers, taxon_count):
+def probability_at_least_taxon_count_num_markers_taxa(num_markers_pmf, num_taxa, num_markers, taxon_count):
     if num_markers == 0:
         return 1
     if taxon_count == 0:
@@ -49,9 +66,6 @@ def probability_at_least_taxon_count_num_markers_taxa(markers_for_each_taxon_n, 
     if num_taxa == 0 and num_markers > 0:
         return 0
 
-
-    # calculate P(B_i = num_markers)
-    num_markers_pmf = binom.pmf(k = num_markers, n = markers_for_each_taxon_n, p = markers_for_each_taxon_p)
     # define I(i, num_markers) to be 1 if B_i = num_markers and 0 otherwise
     # and let C(num_markers) be the sum of I(i, num_markers) over i
     # if I(i, num_markers) were independent, each C(num_markers) would follow a binomial distribution, with:

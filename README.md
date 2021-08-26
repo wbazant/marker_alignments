@@ -66,7 +66,7 @@ The default `--refdb-format` is `generic`, which tries to produce nice names, bu
 Apply a filter to alignments sumarized at the taxa level.
 
 ### Usage
-This is a demo program, which asks for two markers to be present for a taxon
+This is a demo program, which asks for two markers to be present for a taxon.
 
 ```
 summarize_marker_alignments --input tests/data/example.sam --output /dev/stdout --output-type taxon_read_and_marker_count \
@@ -74,6 +74,8 @@ summarize_marker_alignments --input tests/data/example.sam --output /dev/stdout 
   --input /dev/stdin --output /dev/stdout \
   --require-min-markers 2
 ```
+
+There's an option to model the noise after a beta binomial distribution and pick a good `--require-min-markers` value, but it's still experimental.
 
 ## Known issues
 Quantitative information obtained by aligning to a EukDetect reference database might be a little bit dodgy since there are typically very few reads.

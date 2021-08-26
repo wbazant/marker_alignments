@@ -1,8 +1,10 @@
 import unittest
 
 import logging
-from marker_alignments.filter.noise_model import fit_noise_model as t
+from marker_alignments.filter.noise_model import fit_noise_model
 
+def t(taxon_to_num_markers):
+    return fit_noise_model(taxon_to_num_markers, 10000)
 
 class NoiseModel(unittest.TestCase):
     def test_zeros_at_the_end(self):
