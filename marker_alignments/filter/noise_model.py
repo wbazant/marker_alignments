@@ -9,9 +9,11 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, 
     for candidate_cutoff in candidate_cutoffs(taxon_counts_with_num_markers):
         ks = counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff)
 
-        log_likelihoods.append((log_likelihood(ks, beta_sample_size) , -candidate_cutoff))
+        ll = log_likelihood(ks, beta_sample_size)
+        logger.info("Cutoff %s: log likelihood %s", ll, candidate_cutoff)
+        log_likelihoods.append((ll, -candidate_cutoff))
 
-        fit_noise_model({j: ks[j] for j in range(0, 20 if m < 20 else 21)}, beta_sample_size, logger)
+        fit_noise_model({j: ks[j] for j in range(0, min(20,m+2) if m < 20 else 21)}, beta_sample_size, logger)
 
     logger.info("Likelihoods of different possible cutoffs:\nCutoff\tLog likelihood\n%s", "\n".join(["{}\t{:6f}".format(-cutoff, ll) for (ll, cutoff) in log_likelihoods]))
     log_likelihoods.sort(reverse=True)
@@ -20,7 +22,7 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, 
 
 def counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff):
     ks = []
-    for j in range(0, 20):
+    for j in range(0, min(20, m+2)):
        if j in taxon_counts_with_num_markers and j < candidate_cutoff:
            ks.append(taxon_counts_with_num_markers[j])
        else:
@@ -105,7 +107,7 @@ def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
         p = probability_at_least_taxon_count_num_markers_taxa(
                 num_markers_pmf,
                 num_taxa, num_markers, taxon_count)
-        log.append("%s\t%s\t%.2f\t%.2g\t%.2g" % ("20+" if num_markers == 20 else num_markers, taxon_count, round(num_markers_pmf * num_taxa, 2), num_markers_pmf, p ))
+        log.append("%s%s\t%s\t%.2f\t%.2g\t%.2g" % (num_markers, "+" if num_markers == max(taxon_counts_with_num_markers.keys()) else "", taxon_count, round(num_markers_pmf * num_taxa, 2), num_markers_pmf, p ))
         results.append((num_markers, p))
     logger.info("\n".join(log))
     return results

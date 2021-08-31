@@ -1,8 +1,8 @@
 import unittest
 
 import logging
+#logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tests/filter_noise_model')
-logger.setLevel(logging.INFO)
 from marker_alignments.filter.noise_model import fit_noise_model, log_likelihood, cutoff_fit_for_noise_model
 
 
@@ -19,7 +19,11 @@ class PickCutoff(unittest.TestCase):
         cutoff = cutoff_fit_for_noise_model({0: 2250, 1:1117}, 6000, logger)
         self.assertEqual(cutoff, 2)
 
-    def test_case(self):
+    def test_case_small(self):
+        cutoff = cutoff_fit_for_noise_model({0: 4000, 1:21,2:1 }, 6000, logger)
+        self.assertEqual(cutoff, 2)
+
+    def test_case_prawn(self):
         cutoff = cutoff_fit_for_noise_model({0: 2250, 1:1117,2:466,3:137,4:35,5:7,6:3,7:1,25:1}, 6000, logger)
         self.assertEqual(cutoff, 8)
 
