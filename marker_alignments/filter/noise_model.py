@@ -10,7 +10,7 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, 
         ks = counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff)
 
         ll = log_likelihood(ks, beta_sample_size)
-        logger.info("Cutoff %s: log likelihood %s", ll, candidate_cutoff)
+        logger.info("Cutoff %s: log likelihood %s", candidate_cutoff, ll)
         log_likelihoods.append((ll, -candidate_cutoff))
 
         fit_noise_model({j: ks[j] for j in range(0, min(20,m+2) if m < 20 else 21)}, beta_sample_size, logger)
@@ -61,9 +61,13 @@ def log_likelihood(ks, beta_sample_size):
 
     ps = [markers_for_each_taxon_rv.pmf(k = k) for k in range(0, len(ks))] 
 
+    ks.reverse()
+    ps.reverse()
     ll = multinomial.logpmf(x = ks, n=num_taxa, p = ps)
     if numpy.isnan(ll):
         ll = numpy.NINF
+    ks.reverse()
+    ps.reverse()
     return ll
 
 
