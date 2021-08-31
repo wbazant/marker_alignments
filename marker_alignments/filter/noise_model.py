@@ -1,12 +1,69 @@
-from scipy.stats import binom, betabinom
+import numpy
+from scipy.stats import binom, betabinom, multinomial
 
-def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, noise_threshold, logger):
-    model = fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger)
-    ns_above_threshold = [(n,p) for (n,p) in model if p <= noise_threshold]
-    if not ns_above_threshold:
+def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
+    m = max(taxon_counts_with_num_markers.keys())
+    if m < 2:
         return None
-    else:
-        return ns_above_threshold[0]
+    log_likelihoods = []
+    for candidate_cutoff in candidate_cutoffs(taxon_counts_with_num_markers):
+        ks = counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff)
+
+        log_likelihoods.append((log_likelihood(ks, beta_sample_size) , -candidate_cutoff))
+
+        fit_noise_model({j: ks[j] for j in range(0, 20 if m < 20 else 21)}, beta_sample_size, logger)
+
+    logger.info("Likelihoods of different possible cutoffs:\nCutoff\tLog likelihood\n%s", "\n".join(["{}\t{:6f}".format(-cutoff, ll) for (ll, cutoff) in log_likelihoods]))
+    log_likelihoods.sort(reverse=True)
+    (lll, cutoff) = log_likelihoods[0]
+    return -cutoff
+
+def counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff):
+    ks = []
+    for j in range(0, 20):
+       if j in taxon_counts_with_num_markers and j < candidate_cutoff:
+           ks.append(taxon_counts_with_num_markers[j])
+       else:
+           ks.append(0)
+
+    if m >= 20:
+        k_last = 0
+        for jj in range(20, m + 2):
+           if jj in taxon_counts_with_num_markers and jj < candidate_cutoff:
+               k_last += taxon_counts_with_num_markers[jj]
+        ks.append(k_last)
+    return ks
+
+# for each value in the dataset, consider making that the last value below cutoff
+def candidate_cutoffs(taxon_counts_with_num_markers):
+    result = set()
+    for x in taxon_counts_with_num_markers:
+        if x > 0:
+            result.add(x+1)
+    return sorted(result)
+
+# Suppose the number of markers for each taxon followed a beta binomial distribution
+# with sample size as provided, and mean set to the average number of markers
+# num_taxa independent trials, questions about the sum - that's a multinomial distribution
+def log_likelihood(ks, beta_sample_size):
+    total_num_markers = sum([j * ks[j] for j in range(0, len(ks))])
+    num_taxa = sum(ks)
+
+    markers_for_each_taxon_n = total_num_markers
+    markers_for_each_taxon_p = 1.0 / num_taxa
+
+    markers_for_each_taxon_shape_a = markers_for_each_taxon_p * beta_sample_size
+    markers_for_each_taxon_shape_b = (1 - markers_for_each_taxon_p) * beta_sample_size
+
+    markers_for_each_taxon_rv = betabinom(n = markers_for_each_taxon_n, a = markers_for_each_taxon_shape_a, b = markers_for_each_taxon_shape_b)
+
+    ps = [markers_for_each_taxon_rv.pmf(k = k) for k in range(0, len(ks))] 
+
+    ll = multinomial.logpmf(x = ks, n=num_taxa, p = ps)
+    if numpy.isnan(ll):
+        ll = numpy.NINF
+    return ll
+
 
 # When running an alignment and treating each match as presence of a marker,
 # there are always some false positives.
@@ -14,9 +71,6 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, 
 # 
 # Unfortunately with enough false positive markers, we start to hit false positive taxa
 # and the threshold of how many markers we require to identfy a taxon starts to go up.
-#
-# We address this by fitting a null model to the data, and returning the first value for which
-# the null model no longer fits.
 def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
     total_num_markers = sum([j * taxon_counts_with_num_markers[j] for j in taxon_counts_with_num_markers])
     num_taxa = sum([taxon_counts_with_num_markers[j] for j in taxon_counts_with_num_markers])
@@ -37,8 +91,6 @@ def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
     markers_for_each_taxon_shape_a = markers_for_each_taxon_p * beta_sample_size
     markers_for_each_taxon_shape_b = (1 - markers_for_each_taxon_p) * beta_sample_size
 
-    
-
     log=["Distributing {} markers across {} taxa, counts of taxa with k markers are:".format(total_num_markers, num_taxa)]
     log.append("\t".join(["k", "actual", "expected", "pmf", "p(at least actual)"]))
     results = []
@@ -53,7 +105,7 @@ def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
         p = probability_at_least_taxon_count_num_markers_taxa(
                 num_markers_pmf,
                 num_taxa, num_markers, taxon_count)
-        log.append("%s\t%s\t%.2f\t%.2g\t%.2g" % (num_markers, taxon_count, round(num_markers_pmf * num_taxa, 2), num_markers_pmf, p ))
+        log.append("%s\t%s\t%.2f\t%.2g\t%.2g" % ("20+" if num_markers == 20 else num_markers, taxon_count, round(num_markers_pmf * num_taxa, 2), num_markers_pmf, p ))
         results.append((num_markers, p))
     logger.info("\n".join(log))
     return results

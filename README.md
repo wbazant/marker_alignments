@@ -75,7 +75,8 @@ summarize_marker_alignments --input tests/data/example.sam --output /dev/stdout 
   --require-min-markers 2
 ```
 
-There's an option to model the noise after a beta binomial distribution and pick a good `--require-min-markers` value, but it's still experimental.
+There's an experimental option to automatically pick the best `--require-min-markers` value - `--use-noise-model-for-min-markers`.
+It's based on modelling fractions of markers per taxon as a beta distribution, considering `$num_taxa` independent random variables in aggregate, and comparing likelihoods calculated for each possible cutoff. Adventurous users could try it out, using stats calculated by the `scripts/refdb_stats.py` program.
 
 ## Known issues
 Quantitative information obtained by aligning to a EukDetect reference database might be a little bit dodgy since there are typically very few reads.
