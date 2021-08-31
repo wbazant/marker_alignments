@@ -3,7 +3,15 @@ import unittest
 import logging
 #logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('tests/filter_noise_model')
-from marker_alignments.filter.noise_model import fit_noise_model, log_likelihood, cutoff_fit_for_noise_model
+from marker_alignments.filter.noise_model import fit_noise_model, log_likelihood, cutoff_fit_for_noise_model, counts_as_list
+
+class CountsAsList(unittest.TestCase):
+    def test_cases(self):
+        self.assertEqual(counts_as_list({0:1000}, 1), [1000, 0])
+        self.assertEqual(counts_as_list({0:1000, 1: 100}, 2), [1000, 100, 0])
+        self.assertEqual(counts_as_list({0:1000, 1: 100}, 1), [1100, 0, 0])
+        self.assertEqual(counts_as_list({0:1000, 10: 100}, 1, length_limit = 3), [1100, 0, 0, 0])
+        self.assertEqual(counts_as_list({0:1000, 10: 100}, 20, length_limit = 3), [1000, 0, 0, 100])
 
 
 class LogLikelihood(unittest.TestCase):

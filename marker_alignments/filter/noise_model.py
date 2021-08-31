@@ -4,10 +4,11 @@ from scipy.stats import binom, betabinom, multinomial
 def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
     m = max(taxon_counts_with_num_markers.keys())
     if m < 2:
-        return m + 1
+        return 2
+
     log_likelihoods = []
     for candidate_cutoff in candidate_cutoffs(taxon_counts_with_num_markers):
-        ks = counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff)
+        ks = counts_as_list(taxon_counts_with_num_markers, candidate_cutoff)
 
         ll = log_likelihood(ks, beta_sample_size)
         logger.info("Cutoff %s: log likelihood %s", candidate_cutoff, ll)
@@ -20,19 +21,24 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, 
     (lll, cutoff) = log_likelihoods[0]
     return -cutoff
 
-def counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff):
+def counts_as_list(taxon_counts_with_num_markers, candidate_cutoff, length_limit = 20):
+    m = max(taxon_counts_with_num_markers.keys())
     ks = []
-    for j in range(0, min(20, m+2)):
+    for j in range(0, min(length_limit, m+2)):
        if j in taxon_counts_with_num_markers and j < candidate_cutoff:
            ks.append(taxon_counts_with_num_markers[j])
        else:
+           if j in taxon_counts_with_num_markers:
+               ks[0]+=taxon_counts_with_num_markers[j]
            ks.append(0)
 
-    if m >= 20:
+    if m >= length_limit:
         k_last = 0
-        for jj in range(20, m + 2):
+        for jj in range(length_limit, m + 2):
            if jj in taxon_counts_with_num_markers and jj < candidate_cutoff:
                k_last += taxon_counts_with_num_markers[jj]
+           elif jj in taxon_counts_with_num_markers:
+               ks[0]+=taxon_counts_with_num_markers[jj]
         ks.append(k_last)
     return ks
 
