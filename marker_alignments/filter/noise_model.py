@@ -4,7 +4,7 @@ from scipy.stats import binom, betabinom, multinomial
 def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
     m = max(taxon_counts_with_num_markers.keys())
     if m < 2:
-        return None
+        return m + 1
     log_likelihoods = []
     for candidate_cutoff in candidate_cutoffs(taxon_counts_with_num_markers):
         ks = counts_as_list(taxon_counts_with_num_markers, m, candidate_cutoff)

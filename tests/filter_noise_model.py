@@ -15,6 +15,10 @@ class LogLikelihood(unittest.TestCase):
         self.assertGreater(ll2, ll3)
 
 class PickCutoff(unittest.TestCase):
+    def test_null_case(self):
+        cutoff = cutoff_fit_for_noise_model({0: 2250, 1:1117}, 6000, logger)
+        self.assertEqual(cutoff, 2)
+
     def test_case(self):
         cutoff = cutoff_fit_for_noise_model({0: 2250, 1:1117,2:466,3:137,4:35,5:7,6:3,7:1,25:1}, 6000, logger)
         self.assertEqual(cutoff, 8)
