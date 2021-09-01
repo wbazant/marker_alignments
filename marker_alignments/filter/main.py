@@ -51,7 +51,6 @@ def main(argv=sys.argv[1:]):
                 taxon_counts_with_num_markers[n] = 0
             taxon_counts_with_num_markers[n] += 1
         cutoff_fit = cutoff_fit_for_noise_model(taxon_counts_with_num_markers, options.beta_sample_size, logger)
-        logger.info("Selected a cutoff: %s", cutoff_fit)
         if options.require_min_markers and options.require_min_markers > cutoff_fit:
             logger.info("Cutoff fit is less than --require-min-markers value - will use that instead: %s", options.require_min_markers)
             require_min_markers = options.require_min_markers

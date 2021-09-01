@@ -14,12 +14,26 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, 
         logger.info("Cutoff %s: log likelihood %s", candidate_cutoff, ll)
         log_likelihoods.append((ll, -candidate_cutoff))
 
-        fit_noise_model({j: ks[j] for j in range(0, min(20,m+2) if m < 20 else 21)}, beta_sample_size, logger)
-
     logger.info("Likelihoods of different possible cutoffs:\nCutoff\tLog likelihood\n%s", "\n".join(["{}\t{:6f}".format(-cutoff, ll) for (ll, cutoff) in log_likelihoods]))
+
     log_likelihoods.sort(reverse=True)
     (lll, cutoff) = log_likelihoods[0]
-    return -cutoff
+    cutoff = -cutoff
+    logger.info("Selected a cutoff: %s", cutoff)
+
+    ks = counts_as_list(taxon_counts_with_num_markers, cutoff)
+    actuals = counts_as_list(taxon_counts_with_num_markers, 10000000000)
+
+    d = {j: ks[j] for j in range(0, len(ks))}
+    expected = fit_noise_model(d, beta_sample_size)
+    log=["Expected under this cutoff:"]
+    log.append("\t".join(["n", "actual", "expected"]))
+    for j in range(0, len(ks)):
+        if j == cutoff:
+            log.append("---\t---\t---\t")
+        log.append("{}{}\t{}\t{:.2f}".format(j, "+" if j == len(ks)-1 else "", actuals[j],  expected[j]))
+    logger.info("%s", "\n".join(log))
+    return cutoff
 
 def counts_as_list(taxon_counts_with_num_markers, candidate_cutoff, length_limit = 20):
     m = max(taxon_counts_with_num_markers.keys())
@@ -77,13 +91,7 @@ def log_likelihood(ks, beta_sample_size):
     return ll
 
 
-# When running an alignment and treating each match as presence of a marker,
-# there are always some false positives.
-# This is why presence of multiple markers is needed to identify a taxon.
-# 
-# Unfortunately with enough false positive markers, we start to hit false positive taxa
-# and the threshold of how many markers we require to identfy a taxon starts to go up.
-def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
+def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size):
     total_num_markers = sum([j * taxon_counts_with_num_markers[j] for j in taxon_counts_with_num_markers])
     num_taxa = sum([taxon_counts_with_num_markers[j] for j in taxon_counts_with_num_markers])
     if num_taxa == 0: return []
@@ -103,42 +111,10 @@ def fit_noise_model(taxon_counts_with_num_markers, beta_sample_size, logger):
     markers_for_each_taxon_shape_a = markers_for_each_taxon_p * beta_sample_size
     markers_for_each_taxon_shape_b = (1 - markers_for_each_taxon_p) * beta_sample_size
 
-    log=["Distributing {} markers across {} taxa, counts of taxa with k markers are:".format(total_num_markers, num_taxa)]
-    log.append("\t".join(["k", "actual", "expected", "pmf", "p(at least actual)"]))
-    results = []
+    results = {}
     for num_markers in sorted(taxon_counts_with_num_markers.keys()):
-        # there were this many taxa in the dataset
         taxon_count = taxon_counts_with_num_markers[num_markers]
-        # null hypothesis: this is not yet above what we expect randomly
-        # what's the chance of this happening?
-
         num_markers_pmf = betabinom.pmf(k = num_markers, n = markers_for_each_taxon_n, a = markers_for_each_taxon_shape_a, b = markers_for_each_taxon_shape_b)
-        # num_markers_pmf = binom.pmf(k = num_markers, n = markers_for_each_taxon_n, p = markers_for_each_taxon_p)
-        p = probability_at_least_taxon_count_num_markers_taxa(
-                num_markers_pmf,
-                num_taxa, num_markers, taxon_count)
-        log.append("%s%s\t%s\t%.2f\t%.2g\t%.2g" % (num_markers, "+" if num_markers == max(taxon_counts_with_num_markers.keys()) else "", taxon_count, round(num_markers_pmf * num_taxa, 2), num_markers_pmf, p ))
-        results.append((num_markers, p))
-    logger.info("\n".join(log))
+        expected = 1.0 * num_taxa * num_markers_pmf
+        results[num_markers] = expected
     return results
-
-def probability_at_least_taxon_count_num_markers_taxa(num_markers_pmf, num_taxa, num_markers, taxon_count):
-    if num_markers == 0:
-        return 1
-    if taxon_count == 0:
-        return 1
-    if num_taxa == 0 and num_markers > 0:
-        return 0
-
-    # define I(i, num_markers) to be 1 if B_i = num_markers and 0 otherwise
-    # and let C(num_markers) be the sum of I(i, num_markers) over i
-    # if I(i, num_markers) were independent, each C(num_markers) would follow a binomial distribution, with:
-    taxa_with_num_markers_n = num_taxa
-    taxa_with_num_markers_p = num_markers_pmf
-    # they are not independent because sum of B_i adds up to total_num_markers but should be fine for small num_markers!
-
-    # calculate the result using the survival function from the package:
-    # P(C >= x) = 1 - cdf(x-1) = sf(x-1)
-    sf = binom.sf(k = taxon_count - 1, n = taxa_with_num_markers_n, p = taxa_with_num_markers_p)
-    return sf
-
