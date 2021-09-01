@@ -11,7 +11,6 @@ def cutoff_fit_for_noise_model(taxon_counts_with_num_markers, beta_sample_size, 
         ks = counts_as_list(taxon_counts_with_num_markers, candidate_cutoff)
 
         ll = log_likelihood(ks, beta_sample_size)
-        logger.info("Cutoff %s: log likelihood %s", candidate_cutoff, ll)
         log_likelihoods.append((ll, -candidate_cutoff))
 
     logger.info("Likelihoods of different possible cutoffs:\nCutoff\tLog likelihood\n%s", "\n".join(["{}\t{:6f}".format(-cutoff, ll) for (ll, cutoff) in log_likelihoods]))
@@ -59,6 +58,11 @@ def counts_as_list(taxon_counts_with_num_markers, candidate_cutoff, length_limit
 # for each value in the dataset, consider making that the last value below cutoff
 def candidate_cutoffs(taxon_counts_with_num_markers):
     result = set()
+    if taxon_counts_with_num_markers:
+        # also try 2
+        # if there are no 1s but there are higher values, this will be a cutoff with likelihood 0
+        result.add(2)
+
     for x in taxon_counts_with_num_markers:
         if x > 0:
             result.add(x+1)
