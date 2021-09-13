@@ -11,10 +11,12 @@ from marker_alignments.refdb_pattern import taxon_and_marker_patterns
 # do it proportionally to the second power of match identity
 # (identity = match length / alignment length)
 def multiple_matches_weighing(read): #pysam.AlignedSegment
+    return round(math.pow(fraction_identity(read), 2), 6)
+
+def fraction_identity(read): #pysam.AlignedSegment
     match_length = len(read.get_aligned_pairs(matches_only=True))
     alignment_length = len(read.get_aligned_pairs())
-    identity_fraction = 1.0 * match_length / alignment_length
-    return round(math.pow(identity_fraction, 2), 6)
+    return 1.0 * match_length / alignment_length
 
 # longer genes have more reads aligning to them
 # so instead of counting reads, estimate a number of copies of each marker
@@ -27,8 +29,8 @@ def next_g(search):
     return next(g for g in search.groups() if g is not None);
 
 def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_taxon):
-    taxon = marker_to_taxon[reference_name] if reference_name in marker_to_taxon else None
 
+    taxon = marker_to_taxon[reference_name] if reference_name in marker_to_taxon else None
     taxon_search = pattern_taxon.search(reference_name)
     if taxon_search and taxon:
         taxon = "|".join([taxon, next_g(taxon_search)])
@@ -49,13 +51,21 @@ def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_ta
         marker = reference_name
     return (taxon, marker)
 
-
-def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker, marker_to_taxon):
+def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marker, marker_to_taxon, min_mapq, min_query_length, min_match_identity):
 
     alignment_store = AlignmentStore(db_path=sqlite_db_path)
     alignment_store.start_bulk_write()
 
+
     for read in alignment_file.fetch():
+        if read.mapq < min_mapq:
+            continue
+        if read.query_length < min_query_length:
+            continue
+        if fraction_identity(read) < min_match_identity:
+            continue
+        if not read.reference_name:
+            raise ValueError("Read missing reference name: " + str(read))
         (taxon, marker) = taxon_and_marker(read.reference_name, pattern_taxon, pattern_marker, marker_to_taxon)
         if not taxon:
             raise ValueError("Could not find taxon in reference name: " + read.reference_name)
@@ -97,6 +107,9 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--num-reads", type=int, action="store", dest="num_reads", help = "Total number of reads (required for CPM output)")
     parser.add_argument("--output-type", type=str, action="store", dest="output_type", help = "output type: "+", ".join(output_type_options), default = "marker_coverage")
     parser.add_argument("--output", type=str, action="store", dest="output_path", help = "output path", required=True)
+    parser.add_argument("--min-read-mapq", type=int, action="store", dest="min_read_mapq", help = "when reading the input, skip alignments with MAPQ < min-read-mapq", default=0)
+    parser.add_argument("--min-read-query-length", type=int, action="store", dest="min_read_query_length", help = "when reading the input, skip alignments shorter than min-read-query-length", default=0)
+    parser.add_argument("--min-read-match-identity", type=int, action="store", dest="min_read_match_identity", help = "when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity", default=0)
 
     options=parser.parse_args(argv)
 
@@ -123,6 +136,9 @@ def main(argv=sys.argv[1:]):
       marker_to_taxon = read_marker_to_taxon(options.refdb_marker_to_taxon_path) if options.refdb_marker_to_taxon_path else {},
       pattern_taxon = re.compile(options.refdb_regex_taxon),
       pattern_marker = re.compile(options.refdb_regex_marker),
+      min_mapq = options.min_read_mapq,
+      min_query_length = options.min_read_query_length,
+      min_match_identity = options.min_read_match_identity,
     )
 
     if options.output_type == "marker_coverage":

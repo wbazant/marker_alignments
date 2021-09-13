@@ -56,6 +56,16 @@ alignment_store = read_alignments(
 )
 markers = [ marker for marker in alignment_store.query('select distinct marker from alignment order by -coverage')]
 ```
+
+## Filtering the results
+
+
+| Parameter  | Filtering level | Description |
+| ------------- | ------------- | ------------ |
+| --min-read-mapq  | aligned read   | MAPQ field in the alignment file |
+| --min-read-query-length  | aligned read | Length of the alignment | 
+| --min-read-match-identity  | aligned read  | Fraction of the alignment with matching bases |
+
 ### Custom refdb
 The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-path`.
 
@@ -72,3 +82,5 @@ I took the method of splitting multiple aligned reads by a weighted average (wit
 I was inspired by how MetaPhlAn calculates taxon CPMs from marker CPMs, although they have more options and I just ported the simple one.
 I copied the package setup from EukDetect, and developed the package mostly in the context of alignments to the EukDetect reference.
 An idea for what outputs might be useful to users comes jointly from these three tools.
+
+For inspiration of what read properties are worth filtering on and how to do it, some credit goes to [TALON's `transcript_utils` file](https://github.com/mortazavilab/TALON/blob/master/src/talon/transcript_utils.py).
