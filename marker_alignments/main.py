@@ -109,7 +109,7 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--output", type=str, action="store", dest="output_path", help = "output path", required=True)
     parser.add_argument("--min-read-mapq", type=int, action="store", dest="min_read_mapq", help = "when reading the input, skip alignments with MAPQ < min-read-mapq", default=0)
     parser.add_argument("--min-read-query-length", type=int, action="store", dest="min_read_query_length", help = "when reading the input, skip alignments shorter than min-read-query-length", default=0)
-    parser.add_argument("--min-read-match-identity", type=int, action="store", dest="min_read_match_identity", help = "when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity", default=0)
+    parser.add_argument("--min-read-match-identity", type=float, action="store", dest="min_read_match_identity", help = "when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity", default=0)
     parser.add_argument("--min-taxon-num-markers", type=int, action="store", dest="min_taxon_num_markers", help = "For taxon output: only report taxa with at least min-taxon-num-markers markers")
     parser.add_argument("--min-taxon-num-reads", type=int, action="store", dest="min_taxon_num_reads", help = "For taxon output: only report taxa with at least min-taxon-num-reads reads")
 
