@@ -4,8 +4,8 @@ import pysam
 import re
 import math
 
-from marker_alignments.summarize.store import AlignmentStore
-from marker_alignments.summarize.refdb_pattern import taxon_and_marker_patterns
+from marker_alignments.store import AlignmentStore
+from marker_alignments.refdb_pattern import taxon_and_marker_patterns
 
 # if a read matches multiple markers, distribute it across matches
 # do it proportionally to the second power of match identity

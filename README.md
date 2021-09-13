@@ -5,20 +5,17 @@ Alignments to marker genes are frequently used in shotgun metagenomics to quanti
 
 `marker_alignments` is a versatile and memory-efficient tool for working with alignments to marker genes. It uses a package `pysam` to read the files, so all common alignment formats should be supported. In addition to a few different outputs, you can also keep an intermediate database, and query it however you like.
 
-## Install
+## Installation
 First clone this repository, then install locally:
 ```
 pip3 install .
 ```
 
-## Summarize alignments - the `summarize_marker_alignments` tool
-Read an alignment file produced by `bowtie2` or a similar program, and interpret the results in the context of matches to markers and taxa.
-
-### Usage
+## Usage
 This is the most basic program:
 
 ```
-summarize_marker_alignments --input tests/data/example.sam --output /dev/stdout
+marker_alignments --input tests/data/example.sam --output /dev/stdout
 ```
 
 It produces a coverage report for each reference in the alignments file.
@@ -35,7 +32,7 @@ bowtie2 --omit-sec-seq --no-discordant --no-unal \
   -2 ERR2749179_2.fastq \
   -S ERR2749179-eukprot.sam 
 
-summarize_marker_alignments --input ERR2749179-eukprot.sam --output ERR2749179-eukprot-taxa.tsv \
+marker_alignments --input ERR2749179-eukprot.sam --output ERR2749179-eukprot-taxa.tsv \
   --refdb-format eukprot \
   --output-type taxon_all \
   --num-reads $(grep -c '^@' ERR2749179_1.fastq) \
@@ -62,24 +59,10 @@ markers = [ marker for marker in alignment_store.query('select distinct marker f
 ### Custom refdb
 The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-path`.
 
-## Filter the summary - the `filter_marker_alignments_taxa` tool
-Apply a filter to alignments sumarized at the taxa level.
-
-### Usage
-This is a demo program, which asks for two markers to be present for a taxon.
-
-```
-summarize_marker_alignments --input tests/data/example.sam --output /dev/stdout --output-type taxon_read_and_marker_count \
-  | filter_marker_alignments_taxa \
-  --input /dev/stdin --output /dev/stdout \
-  --require-min-markers 2
-```
-
-There's an experimental option to automatically pick the best `--require-min-markers` value - `--use-noise-model-for-min-markers`.
-It's based on modelling fractions of markers per taxon as a beta distribution, considering `$num_taxa` independent random variables in aggregate, and comparing likelihoods calculated for each possible cutoff. Adventurous users could try it out, using stats calculated by the `scripts/refdb_stats.py` program.
-
 ## Known issues
 Quantitative information obtained by aligning to a EukDetect reference database might be a little bit dodgy since there are typically very few reads.
+
+The results might contain a lot of noise, and excluding low-length and low quality alignments might help. Passing the alignments file through `samtools view -m40 -q30 -h` before summarizing might go a long way.
 
 
 For a large enough file, the sqlite query engine runs out of page numbers when doing a `group by`. In [my fork of HuMAnN with similar query code](https://github.com/wbazant/humann/commit/1dc767f855) I have solved this by adding `'PRAGMA max_page_count = 4294967292;'` before the `group by`. I've not yet ran into this issue when using this package.

@@ -5,8 +5,8 @@ import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 import re
-from marker_alignments.summarize.main import read_alignments
-from marker_alignments.summarize.store import AlignmentStore
+from marker_alignments.main import read_alignments
+from marker_alignments.store import AlignmentStore
 
 num_reads = 100000
 def outputs(alignment_store):

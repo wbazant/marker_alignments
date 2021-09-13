@@ -7,7 +7,7 @@ with open('LICENSE') as f:
 	license=f.read()
 
 setuptools.setup(name='marker_alignments',
-    version='0.1',
+    version='0.2',
     description="Process and summarise alignments of metagenomic sequencing reads to reference databases of marker genes",
     long_description_content_type="text/markdown",
     url='http://github.com/wbazant/marker_alignments',
@@ -15,8 +15,7 @@ setuptools.setup(name='marker_alignments',
     author_email='wojciech.bazant@gmail.com',
     license=license,
     entry_points={"console_scripts": [
-        "summarize_marker_alignments = marker_alignments.summarize.main:main",
-        "filter_marker_alignments_taxa= marker_alignments.filter.main:main",
+        "marker_alignments = marker_alignments.main:main",
     ]},
     packages=setuptools.find_packages(),
 )
