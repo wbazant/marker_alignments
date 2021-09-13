@@ -65,6 +65,8 @@ markers = [ marker for marker in alignment_store.query('select distinct marker f
 | --min-read-mapq  | aligned read   | MAPQ field in the alignment file |
 | --min-read-query-length  | aligned read | Length of the alignment | 
 | --min-read-match-identity  | aligned read  | Fraction of the alignment with matching bases |
+| --min-taxon-num-markers | taxon | Number of markers where the taxon had aligned reads |
+| --min-taxon-num-reads | taxon | Number of reads aligned to taxon's markers |
 
 ### Custom refdb
 The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-path`.

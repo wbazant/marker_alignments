@@ -110,6 +110,8 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--min-read-mapq", type=int, action="store", dest="min_read_mapq", help = "when reading the input, skip alignments with MAPQ < min-read-mapq", default=0)
     parser.add_argument("--min-read-query-length", type=int, action="store", dest="min_read_query_length", help = "when reading the input, skip alignments shorter than min-read-query-length", default=0)
     parser.add_argument("--min-read-match-identity", type=int, action="store", dest="min_read_match_identity", help = "when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity", default=0)
+    parser.add_argument("--min-taxon-num-markers", type=int, action="store", dest="min_taxon_num_markers", help = "For taxon output: only report taxa with at least min-taxon-num-markers markers")
+    parser.add_argument("--min-taxon-num-reads", type=int, action="store", dest="min_taxon_num_reads", help = "For taxon output: only report taxa with at least min-taxon-num-reads reads")
 
     options=parser.parse_args(argv)
 
@@ -126,9 +128,14 @@ def main(argv=sys.argv[1:]):
     if not (options.refdb_regex_taxon and options.refdb_regex_marker):
         raise ValueError("Please provide either refdb format, or taxon + marker regexes")
 
-
     if options.output_type in ["marker_all","marker_cpm", "taxon_all", "taxon_cpm"] and not options.num_reads:
         raise ValueError("--num-reads required for calculating " + options.output_type)
+
+    if options.min_taxon_num_markers and options.output_type not in ["taxon_read_and_marker_count", "taxon_all"]:
+        raise ValueError("--min-taxon-num-markers only valid for output types: taxon_read_and_marker_count, taxon_all")
+
+    if options.min_taxon_num_reads and options.output_type not in ["taxon_read_and_marker_count", "taxon_all"]:
+        raise ValueError("--min-taxon-num-reads only valid for output types: taxon_read_and_marker_count, taxon_all")
 
     alignment_store = read_alignments(
       alignment_file = pysam.AlignmentFile(options.input_alignment_file),
@@ -165,6 +172,14 @@ def main(argv=sys.argv[1:]):
     elif options.output_type == "taxon_all":
         header = ["taxon", "coverage", "cpm", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
         lines = alignment_store.as_taxon_all(options.num_reads)
+
+    if options.min_taxon_num_markers:
+       i = header.index("taxon_num_markers")
+       lines = [ l for l in lines if l[i] >= options.min_taxon_num_markers]
+
+    if options.min_taxon_num_reads:
+       i = header.index("taxon_num_reads")
+       lines = [ l for l in lines if l[i] >= options.min_taxon_num_reads]
 
     field_formats = {
       "taxon" : "",
