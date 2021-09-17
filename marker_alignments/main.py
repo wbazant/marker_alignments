@@ -7,23 +7,8 @@ import math
 from marker_alignments.store import AlignmentStore
 from marker_alignments.refdb_pattern import taxon_and_marker_patterns
 
-# if a read matches multiple markers, distribute it across matches
-# do it proportionally to the second power of match identity
-# (identity = match length / alignment length)
-def multiple_matches_weighing(read): #pysam.AlignedSegment
-    return round(math.pow(fraction_identity(read), 2), 6)
+from marker_alignments.pysam2 import compute_contribution_to_marker_coverage, compute_alignment_identity
 
-def fraction_identity(read): #pysam.AlignedSegment
-    match_length = len(read.get_aligned_pairs(matches_only=True))
-    alignment_length = len(read.get_aligned_pairs())
-    return 1.0 * match_length / alignment_length
-
-# longer genes have more reads aligning to them
-# so instead of counting reads, estimate a number of copies of each marker
-# this should be proportional to species abundance and agree between markers
-# ( and also proportional to sequencing depth - we correct that later if calculating CPM output)
-def contribution_to_marker_coverage(read, marker_length):
-    return round(1.0 * read.infer_query_length() / marker_length, 6)
 
 def next_g(search):
     return next(g for g in search.groups() if g is not None);
@@ -56,13 +41,13 @@ def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marke
     alignment_store = AlignmentStore(db_path=sqlite_db_path)
     alignment_store.start_bulk_write()
 
-
     for read in alignment_file.fetch():
+        identity = compute_alignment_identity(read)
         if read.mapq < min_mapq:
             continue
         if read.query_length < min_query_length:
             continue
-        if fraction_identity(read) < min_match_identity:
+        if identity < min_match_identity:
             continue
         if not read.reference_name:
             raise ValueError("Read missing reference name: " + str(read))
@@ -76,8 +61,8 @@ def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marke
           taxon = taxon,
           marker = marker,
           query = read.query_name,
-          weight = multiple_matches_weighing(read),
-          coverage = contribution_to_marker_coverage(read, alignment_file.get_reference_length(read.reference_name)),
+          identity = identity,
+          coverage = compute_contribution_to_marker_coverage(alignment_file, read),
         )
 
     alignment_store.end_bulk_write()

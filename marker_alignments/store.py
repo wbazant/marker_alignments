@@ -33,6 +33,8 @@ class SqliteStore:
         self.__is_within_transaction = False
         self.__stateful_ops_in_bulk_write = None
 
+
+# when splitting read stats by query, do it proportionally to the second power of match identity
 marker_query_template='''
   select taxon, marker, {} from (
     select
@@ -42,7 +44,7 @@ marker_query_template='''
       {}
     from
       alignment a join (
-      select query, sum(weight) as total_weight_for_query
+      select query, sum(identity * identity) as total_weight_for_query
         from alignment group by query
       ) as m
     where a.query = m.query
@@ -50,9 +52,9 @@ marker_query_template='''
   ) group by taxon, marker
 '''
 s_cov="sum(coverage) as marker_coverage"
-p_cov="a.coverage * a.weight / (m.total_weight_for_query) as coverage"
+p_cov="a.coverage * a.identity * a.identity / (m.total_weight_for_query) as coverage"
 s_mrc="sum(weight_fraction) as marker_read_count"
-p_wf="a.weight / (m.total_weight_for_query) as weight_fraction"
+p_wf="a.identity * a.identity / (m.total_weight_for_query) as weight_fraction"
 s_cpm="sum(coverage) / (?) * 1000000 as marker_cpm"
 
 marker_coverage_query=marker_query_template.format(s_cov, p_cov)
@@ -83,12 +85,12 @@ class AlignmentStore(SqliteStore):
               taxon text not null,
               marker text not null,
               query text not null,
-              weight real not null,
+              identity real not null,
               coverage real not null
             );''')
         
-    def add_alignment(self, taxon, marker, query, weight, coverage):
-        self.do('insert into alignment (taxon, marker, query, weight, coverage) values (?,?,?,?,?)', [ taxon, marker, query, weight, coverage])
+    def add_alignment(self, taxon, marker, query, identity, coverage):
+        self.do('insert into alignment (taxon, marker, query, identity, coverage) values (?,?,?,?,?)', [ taxon, marker, query, identity, coverage])
 
     def as_marker_coverage(self):
         return self.query(marker_coverage_query)

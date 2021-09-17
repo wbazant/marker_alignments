@@ -1,3 +1,4 @@
+# todo: SS SG MG collapse
 
 eukprot_refdb_regex_taxon = "^[a-z]+-(.*_[a-z-]+(?:_.*)?)-[0-9]+at2759-[A-Z]\d$|^[a-z]+-(.*)...Collapse.*$"
 eukprot_refdb_regex_marker = "^[a-z]+-.*_[a-z-]+(?:_.*)?-([0-9]+at2759-[A-Z]\d)$|^[a-z]+-.*(..Collapse.*)$"
