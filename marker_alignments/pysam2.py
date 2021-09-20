@@ -16,13 +16,12 @@ def compute_alignment_identity(sam_record):
         genome."""
 
     read_ID = sam_record.query_name
-    SEQ = sam_record.query
     try:
         MD_tag = sam_record.get_tag('MD')
     except KeyError:
         raise ValueError("SAM transcript %s lacks an MD tag" % read_ID)
 
-    total_bases = len(SEQ)
+    total_bases = sam_record.infer_query_length()
     matches = 0.0
     ops, counts = splitMD(MD_tag)
     for op,ct in zip(ops, counts):

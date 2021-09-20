@@ -45,7 +45,7 @@ def read_alignments(alignment_file, sqlite_db_path, pattern_taxon, pattern_marke
         identity = compute_alignment_identity(read)
         if read.mapq < min_mapq:
             continue
-        if read.query_length < min_query_length:
+        if read.infer_query_length() < min_query_length:
             continue
         if identity < min_match_identity:
             continue
