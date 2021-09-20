@@ -78,6 +78,36 @@ def read_marker_to_taxon(path):
 
 output_type_options = ["marker_coverage", "marker_read_count", "marker_cpm", "marker_all", "taxon_coverage", "taxon_read_and_marker_count", "taxon_cpm", "taxon_all"]
 
+def get_output(alignment_store, output_type, num_reads):
+    if output_type == "marker_coverage":
+        header = ["taxon", "marker", "marker_coverage"]
+        lines = alignment_store.as_marker_coverage()
+    elif output_type == "marker_read_count":
+        header = ["taxon", "marker", "marker_read_count"]
+        lines = alignment_store.as_marker_read_count()
+    elif output_type == "marker_cpm":
+        header = ["taxon", "marker", "marker_cpm"]
+        lines = alignment_store.as_marker_cpm(num_reads)
+    elif output_type == "marker_all":
+        header = ["taxon", "marker", "marker_coverage", "marker_cpm", "marker_read_count"]
+        lines = alignment_store.as_marker_all(num_reads)
+    elif output_type == "taxon_coverage":
+        header = ["taxon", "coverage"]
+        lines = alignment_store.as_taxon_coverage()
+    elif output_type == "taxon_read_and_marker_count":
+        header = ["taxon", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
+        lines = alignment_store.as_taxon_read_and_marker_count()
+    elif output_type == "taxon_cpm":
+        header = ["taxon", "cpm"]
+        lines = alignment_store.as_taxon_cpm(num_reads)
+    elif output_type == "taxon_all":
+        header = ["taxon", "coverage", "cpm", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
+        lines = alignment_store.as_taxon_all(num_reads)
+    else:
+        raise ValueError("Unknown output type: " + output_type)
+
+    return header, lines
+
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(
       description="summarize_marker_alignments - process and summarise alignments of metagenomic sequencing reads to reference databases of marker genes",
@@ -133,30 +163,7 @@ def main(argv=sys.argv[1:]):
       min_match_identity = options.min_read_match_identity,
     )
 
-    if options.output_type == "marker_coverage":
-        header = ["taxon", "marker", "marker_coverage"]
-        lines = alignment_store.as_marker_coverage()
-    elif options.output_type == "marker_read_count":
-        header = ["taxon", "marker", "marker_read_count"]
-        lines = alignment_store.as_marker_read_count()
-    elif options.output_type == "marker_cpm":
-        header = ["taxon", "marker", "marker_cpm"]
-        lines = alignment_store.as_marker_cpm(options.num_reads)
-    elif options.output_type == "marker_all":
-        header = ["taxon", "marker", "marker_coverage", "marker_cpm", "marker_read_count"]
-        lines = alignment_store.as_marker_all(options.num_reads)
-    elif options.output_type == "taxon_coverage":
-        header = ["taxon", "coverage"]
-        lines = alignment_store.as_taxon_coverage()
-    elif options.output_type == "taxon_read_and_marker_count":
-        header = ["taxon", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
-        lines = alignment_store.as_taxon_read_and_marker_count()
-    elif options.output_type == "taxon_cpm":
-        header = ["taxon", "cpm"]
-        lines = alignment_store.as_taxon_cpm(options.num_reads)
-    elif options.output_type == "taxon_all":
-        header = ["taxon", "coverage", "cpm", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
-        lines = alignment_store.as_taxon_all(options.num_reads)
+    header, lines = get_output(alignment_store, options.output_type, options.num_reads)
 
     if options.min_taxon_num_markers:
        i = header.index("taxon_num_markers")
