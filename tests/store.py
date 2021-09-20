@@ -105,6 +105,12 @@ class Store(unittest.TestCase):
         test_column(self, [r117], "taxon_num_reads", {"taxon_1" : 1.0})
         test_column(self, [r117], "taxon_num_markers", {"taxon_1" : 1.0})
 
+    def test_identity(self):
+        r111 = ('taxon_1', 'marker_1','query_1', 0.5, 1.0)
+        r112 = ('taxon_1', 'marker_1','query_2', 1.0, 1.0)
+        test_column(self, [r111], "marker_avg_identity", {"taxon_1" : {"marker_1" : 0.5}})
+        test_column(self, [r111, r112], "marker_avg_identity", {"taxon_1" : {"marker_1" : 0.75}})
+
 if __name__ == '__main__':
     unittest.main()
 

@@ -83,13 +83,13 @@ def get_output(alignment_store, output_type, num_reads):
         header = ["taxon", "marker", "marker_coverage"]
         lines = alignment_store.as_marker_coverage()
     elif output_type == "marker_read_count":
-        header = ["taxon", "marker", "marker_read_count"]
+        header = ["taxon", "marker", "marker_read_count", "marker_avg_identity"]
         lines = alignment_store.as_marker_read_count()
     elif output_type == "marker_cpm":
         header = ["taxon", "marker", "marker_cpm"]
         lines = alignment_store.as_marker_cpm(num_reads)
     elif output_type == "marker_all":
-        header = ["taxon", "marker", "marker_coverage", "marker_cpm", "marker_read_count"]
+        header = ["taxon", "marker", "marker_coverage", "marker_cpm", "marker_read_count", "marker_avg_identity"]
         lines = alignment_store.as_marker_all(num_reads)
     elif output_type == "taxon_coverage":
         header = ["taxon", "coverage"]
@@ -179,6 +179,7 @@ def main(argv=sys.argv[1:]):
       "marker_cpm": ":.6f",
       "marker_coverage": ":.6f",
       "marker_read_count": ":.2f",
+      "marker_avg_identity": ":.6f",
       "cpm" : ":.6f",
       "coverage" : ":.6f",
       "taxon_num_reads": ":.6f",

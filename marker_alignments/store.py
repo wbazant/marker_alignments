@@ -41,6 +41,7 @@ marker_query_template='''
       a.query,
       a.taxon,
       a.marker,
+      a.identity,
       {}
     from
       alignment a join (
@@ -53,7 +54,7 @@ marker_query_template='''
 '''
 s_cov="sum(coverage) as marker_coverage"
 p_cov="a.coverage * a.identity * a.identity / (m.total_weight_for_query) as coverage"
-s_mrc="sum(weight_fraction) as marker_read_count"
+s_mrc="sum(weight_fraction) as marker_read_count, avg(identity) as marker_avg_identity"
 p_wf="a.identity * a.identity / (m.total_weight_for_query) as weight_fraction"
 s_cpm="sum(coverage) / (?) * 1000000 as marker_cpm"
 
