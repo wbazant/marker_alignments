@@ -6,16 +6,15 @@ if [ ! "$1" ] ; then
   echo "Usage: $0 database.sql"
   exit 1
 fi
-sqlite3 -separator $'\t' "$1" <<< "
+sqlite3 -header -separator $'\t' "$1" <<< "
 select taxon,
-       match_type,
-       count(*)
+       sum(is_unique) as num_unique_matches,
+       sum(is_best) as num_best_matches,
+       sum(is_inferior) as num_inferior_matches
 from   (select a.taxon,
-               CASE
-                 WHEN s.num_taxa == 1 THEN 'unique'
-                 WHEN s.top_identity - max(a.identity) < 1e-6 THEN 'best'
-                 ELSE 'inferior'
-               END as match_type
+        s.num_taxa == 1 as is_unique,
+        s.num_taxa > 1 and s.top_identity - max(a.identity) < 1e-6 as is_best,
+        s.num_taxa > 1 and s.top_identity - max(a.identity) > 1e-6 as is_inferior
         from   alignment a,
                (select query,
                        Max(identity) as top_identity,
@@ -25,16 +24,6 @@ from   (select a.taxon,
         where  a.query = s.query
         group by a.query, a.taxon
         )
-group  by taxon,
-          match_type; 
-" | perl -E '
-my %result;
-while(<>){
-  chomp;
-  my ($taxon, $match_type, $c) = split "\t";
-  $result{$taxon}{$match_type} = $c}
-say join "\t", qw/taxon num_unique num_best num_inferior/;
-for my $taxon (sort keys %result){
-  say join( "\t", $taxon, (map {$result{$taxon}{$_} // 0} qw/unique best inferior/))
-}'
+group  by taxon;
+"
 
