@@ -104,6 +104,30 @@ filter_taxa_on_multiple_matches_query = '''
   where a.taxon = t.taxon and (t.num_unique_matches + t.num_best_matches ) > (?) * t.num_matches
 '''
 
+# markers with only inferior alignments don't count
+filter_taxa_on_num_markers_and_reads_query = '''
+  select a.* from alignment a,
+  (
+    select taxon,
+    count(distinct marker) as num_markers,
+    count(distinct query) as num_reads
+    from   (
+      select a.taxon, a.marker, a.query
+      from   alignment a,
+           (select query,
+               Max(identity) as top_identity,
+               count(distinct taxon) as num_taxa
+          from   alignment
+          group  by query) s
+      where  a.query = s.query
+      group by a.query, a.taxon, a.marker
+      having s.top_identity - max(a.identity) < 1e-6
+      )
+    group  by taxon
+  ) t
+  where a.taxon = t.taxon and t.num_markers > (?) and t.num_reads > (?)
+'''
+
 class AlignmentStore(SqliteStore):
 
     def __init__(self, **kwargs):
@@ -120,12 +144,19 @@ class AlignmentStore(SqliteStore):
     def add_alignment(self, taxon, marker, query, identity, coverage):
         self.do('insert into alignment (taxon, marker, query, identity, coverage) values (?,?,?,?,?)', [ taxon, marker, query, identity, coverage])
 
-    def modify_table_filter_taxa_on_multiple_matches(self, min_fraction_primary_matches):
+
+    def _modify_table(self, op, select_query, *args):
         self.query("begin transaction")
-        self.query("create table new as " + filter_taxa_on_multiple_matches_query, [min_fraction_primary_matches])
-        self.query("alter table alignment rename to alignment_pre_filter_taxa_on_multiple_matches")
+        self.query("create table new as " + select_query, *args)
+        self.query("alter table alignment rename to alignment_pre_filter_on_" + op)
         self.query("alter table new rename to alignment")
         self.query("commit transaction")
+
+    def modify_table_filter_taxa_on_multiple_matches(self, min_fraction_primary_matches):
+        self._modify_table('multiple_matches', filter_taxa_on_multiple_matches_query, [min_fraction_primary_matches])
+
+    def modify_table_filter_taxa_on_num_markers_and_reads(self, min_num_markers, min_num_reads):
+        self._modify_table('num_markers', filter_taxa_on_num_markers_and_reads_query, [min_num_markers, min_num_reads])
 
 
     def as_marker_coverage(self):

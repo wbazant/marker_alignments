@@ -167,15 +167,10 @@ def main(argv=sys.argv[1:]):
     if options.min_taxon_fraction_primary_matches:
         alignment_store.modify_table_filter_taxa_on_multiple_matches(min_fraction_primary_matches = options.min_taxon_fraction_primary_matches)
 
+    if options.min_taxon_num_markers or options.min_taxon_num_reads:
+        alignment_store.modify_table_filter_taxa_on_num_markers_and_reads(min_num_markers = options.min_taxon_num_markers or 0, min_num_reads = options.min_taxon_num_reads or 0)
+
     header, lines = get_output(alignment_store, options.output_type, options.num_reads)
-
-    if options.min_taxon_num_markers:
-       i = header.index("taxon_num_markers")
-       lines = [ l for l in lines if l[i] >= options.min_taxon_num_markers]
-
-    if options.min_taxon_num_reads:
-       i = header.index("taxon_num_reads")
-       lines = [ l for l in lines if l[i] >= options.min_taxon_num_reads]
 
     field_formats = {
       "taxon" : "",
