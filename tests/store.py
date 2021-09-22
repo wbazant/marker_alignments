@@ -105,11 +105,40 @@ class Store(unittest.TestCase):
         test_column(self, [r117], "taxon_num_reads", {"taxon_1" : 1.0})
         test_column(self, [r117], "taxon_num_markers", {"taxon_1" : 1.0})
 
+        # two possible alignments to the same marker
+        r118a = ('taxon_1', 'marker_1','query_8', 0.5, 1.0)
+        r118b = ('taxon_1', 'marker_1','query_8', 0.75, 1.0)
+        test_column(self, [r118a, r118b], "marker_read_count", {"taxon_1" : {"marker_1" : 1.0}})
+        test_column(self, [r118a, r118b], "marker_cpm", {"taxon_1" : {"marker_1" : 1.0}})
+        test_column(self, [r118a, r118b], "cpm", {"taxon_1" : 1.0})
+        test_column(self, [r118a, r118b], "taxon_num_reads", {"taxon_1" : 1.0})
+        test_column(self, [r118a, r118b], "taxon_num_markers", {"taxon_1" : 1})
+
     def test_identity(self):
         r111 = ('taxon_1', 'marker_1','query_1', 0.5, 1.0)
-        r112 = ('taxon_1', 'marker_1','query_2', 1.0, 1.0)
         test_column(self, [r111], "marker_avg_identity", {"taxon_1" : {"marker_1" : 0.5}})
+        
+        # identity is average over queries
+        r112 = ('taxon_1', 'marker_1','query_2', 1.0, 1.0)
         test_column(self, [r111, r112], "marker_avg_identity", {"taxon_1" : {"marker_1" : 0.75}})
+
+        # take the best score from each query
+        r111a = ('taxon_1', 'marker_1','query_1', 0.6, 1.0)
+        test_column(self, [r111, r111a], "marker_avg_identity", {"taxon_1" : {"marker_1" : 0.6}})
+
+    def test_coverage(self):
+        r111 = ('taxon_1', 'marker_1','query_1', 1.0, 0.5)
+        test_column(self, [r111], "marker_coverage", {"taxon_1" : {"marker_1" : 0.5}})
+
+        # coverage is additive
+        r112 = ('taxon_1', 'marker_1','query_2', 1.0, 0.3)
+        test_column(self, [r111, r112], "marker_coverage", {"taxon_1" : {"marker_1" : 0.5+0.3}})
+
+        # take an average for multiple alignments
+        r111a = ('taxon_1', 'marker_1','query_1', 1.0, 1.0)
+        test_column(self, [r111, r111a], "marker_coverage", {"taxon_1" : {"marker_1" : (0.5+1.0)/2}})
+
+
 
 if __name__ == '__main__':
     unittest.main()

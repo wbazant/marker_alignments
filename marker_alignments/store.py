@@ -35,13 +35,14 @@ class SqliteStore:
 
 
 # when splitting read stats by query, do it proportionally to the second power of match identity
+# if there are multiple matches in a query + taxon + marker, return identity as max and coverage as weighted average
 marker_query_template='''
   select taxon, marker, {} from (
     select
       a.query,
       a.taxon,
       a.marker,
-      a.identity,
+      max(a.identity) as identity,
       {}
     from
       alignment a join (
@@ -53,9 +54,9 @@ marker_query_template='''
   ) group by taxon, marker
 '''
 s_cov="sum(coverage) as marker_coverage"
-p_cov="a.coverage * a.identity * a.identity / (m.total_weight_for_query) as coverage"
+p_cov="sum(a.coverage * a.identity * a.identity) / (m.total_weight_for_query) as coverage"
 s_mrc="sum(weight_fraction) as marker_read_count, avg(identity) as marker_avg_identity"
-p_wf="a.identity * a.identity / (m.total_weight_for_query) as weight_fraction"
+p_wf="sum(a.identity * a.identity) / (m.total_weight_for_query) as weight_fraction"
 s_cpm="sum(coverage) / (?) * 1000000 as marker_cpm"
 
 marker_coverage_query=marker_query_template.format(s_cov, p_cov)
