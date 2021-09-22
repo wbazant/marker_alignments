@@ -78,6 +78,32 @@ taxon_read_and_marker_count_query=taxon_query_template.format(a_tnm, marker_read
 taxon_cpm_query=taxon_query_template.format(a_cpm, marker_coverage_query)
 taxon_all_query=taxon_query_template.format(", ".join([a_cov, a_cpm, a_tnm]), marker_all_query)
 
+filter_taxa_on_multiple_matches_query = '''
+  select a.* from alignment a,
+  (
+    select taxon,
+       count(*) as num_matches,
+       sum(is_unique) as num_unique_matches,
+       sum(is_best) as num_best_matches,
+       sum(is_inferior) as num_inferior_matches
+    from   (select a.taxon,
+      s.num_taxa == 1 as is_unique,
+      s.num_taxa > 1 and s.top_identity - max(a.identity) < 1e-6 as is_best,
+      s.num_taxa > 1 and s.top_identity - max(a.identity) > 1e-6 as is_inferior
+      from   alignment a,
+           (select query,
+               Max(identity) as top_identity,
+               count(distinct taxon) as num_taxa
+          from   alignment
+          group  by query) s
+      where  a.query = s.query
+      group by a.query, a.taxon
+      )
+    group  by taxon
+  ) t
+  where a.taxon = t.taxon and (t.num_unique_matches + t.num_best_matches ) > (?) * t.num_matches
+'''
+
 class AlignmentStore(SqliteStore):
 
     def __init__(self, **kwargs):
@@ -93,6 +119,14 @@ class AlignmentStore(SqliteStore):
         
     def add_alignment(self, taxon, marker, query, identity, coverage):
         self.do('insert into alignment (taxon, marker, query, identity, coverage) values (?,?,?,?,?)', [ taxon, marker, query, identity, coverage])
+
+    def modify_table_filter_taxa_on_multiple_matches(self, min_fraction_primary_matches):
+        self.query("begin transaction")
+        self.query("create table new as " + filter_taxa_on_multiple_matches_query, [min_fraction_primary_matches])
+        self.query("alter table alignment rename to alignment_pre_filter_taxa_on_multiple_matches")
+        self.query("alter table new rename to alignment")
+        self.query("commit transaction")
+
 
     def as_marker_coverage(self):
         return self.query(marker_coverage_query)
