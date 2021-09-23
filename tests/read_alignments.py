@@ -19,29 +19,32 @@ marker_to_taxon_id = { "taxon_1:marker_1" : "id_1"}
 
 class ReadAlignments(unittest.TestCase):
 
+    def assertStoreContent(self, alignment_store, expected):
+        content = [t for t in alignment_store.query('select * from alignment')]
+        self.assertEqual(content, expected)
+
     def test_example(self):
         sam = pysam.AlignmentFile(dir_path + "/data/example.sam")
         alignment_store = read_alignments(sam, None, pattern_taxon, pattern_marker, marker_to_taxon_id, 0,0,0)
-        content = [t for t in alignment_store.query('select * from alignment')]
-        self.assertEqual(content, [r1,r2,r3,r4,r5])
+        self.assertStoreContent(alignment_store, [r1,r2,r3,r4,r5])
 
     def test_filter_mapq(self):
         sam = pysam.AlignmentFile(dir_path + "/data/example.sam")
         alignment_store = read_alignments(sam, None, pattern_taxon, pattern_marker, marker_to_taxon_id, min_mapq = 10, min_query_length = 0, min_match_identity = 0)
-        content = [t for t in alignment_store.query('select * from alignment')]
-        self.assertEqual(content, [r1,r2,r3,r4])
+        self.assertStoreContent(alignment_store, [r1,r2,r3,r4])
 
     def test_filter_query_length(self):
         sam = pysam.AlignmentFile(dir_path + "/data/example.sam")
         alignment_store = read_alignments(sam, None, pattern_taxon, pattern_marker, marker_to_taxon_id, min_mapq = 0, min_query_length = 25, min_match_identity = 0)
-        content = [t for t in alignment_store.query('select * from alignment')]
-        self.assertEqual(content, [r1,r2,r3,r4])
+        self.assertStoreContent(alignment_store, [r1,r2,r3,r4])
 
     def test_filter_match_identity(self):
         sam = pysam.AlignmentFile(dir_path + "/data/example.sam")
         alignment_store = read_alignments(sam, None, pattern_taxon, pattern_marker, marker_to_taxon_id,  min_mapq = 0, min_query_length = 0, min_match_identity = 0.94 )
-        content = [t for t in alignment_store.query('select * from alignment')]
-        self.assertEqual(content, [r1,r5])
+        self.assertStoreContent(alignment_store, [r1,r5])
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

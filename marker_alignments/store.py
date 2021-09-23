@@ -101,7 +101,7 @@ filter_taxa_on_multiple_matches_query = '''
       )
     group  by taxon
   ) t
-  where a.taxon = t.taxon and (t.num_unique_matches + t.num_best_matches ) > (?) * t.num_matches
+  where a.taxon = t.taxon and (t.num_unique_matches + t.num_best_matches ) >= (?) * t.num_matches
 '''
 
 # markers with only inferior alignments don't count
@@ -125,7 +125,7 @@ filter_taxa_on_num_markers_and_reads_query = '''
       )
     group  by taxon
   ) t
-  where a.taxon = t.taxon and t.num_markers > (?) and t.num_reads > (?)
+  where a.taxon = t.taxon and t.num_markers >= (?) and t.num_reads >= (?)
 '''
 
 class AlignmentStore(SqliteStore):

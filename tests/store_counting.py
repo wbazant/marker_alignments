@@ -1,11 +1,6 @@
 import unittest
-
 import pysam
 
-import os
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
-import re
 from marker_alignments.main import get_output, output_type_options as output_types
 from marker_alignments.store import AlignmentStore
 
@@ -49,7 +44,7 @@ def test_column(self, alignments, value_column, expected):
             self.assertEqual(get_as_dictionary(alignments, output_type, value_column), expected)
 
 # rxyz = (taxon_x, marker_y, query_z, identity, coverage)
-class Store(unittest.TestCase):
+class StoreCounting(unittest.TestCase):
     def test_counting(self):
         r111 = ('taxon_1', 'marker_1','query_1', 1.0, 1.0)
 
