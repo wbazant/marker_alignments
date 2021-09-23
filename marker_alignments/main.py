@@ -128,6 +128,7 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--min-taxon-num-markers", type=int, action="store", dest="min_taxon_num_markers", help = "For taxon output: only report taxa with at least min-taxon-num-markers markers")
     parser.add_argument("--min-taxon-num-reads", type=int, action="store", dest="min_taxon_num_reads", help = "For taxon output: only report taxa with at least min-taxon-num-reads reads")
     parser.add_argument("--min-taxon-fraction-primary-matches", type=float, action="store", dest="min_taxon_fraction_primary_matches", help = "Only keep taxa where no more than min-taxon-fraction-primary-matches fraction of alignments is inferior / secondary")
+    parser.add_argument("--min-taxon-avg-match-identity", type=float, action="store", dest="min_taxon_avg_identity", help = "Only keep taxa where the average read identity is at least min-taxon-avg-match-identity")
 
     options=parser.parse_args(argv)
 
@@ -169,6 +170,9 @@ def main(argv=sys.argv[1:]):
 
     if options.min_taxon_num_markers or options.min_taxon_num_reads:
         alignment_store.modify_table_filter_taxa_on_num_markers_and_reads(min_num_markers = options.min_taxon_num_markers or 0, min_num_reads = options.min_taxon_num_reads or 0)
+
+    if options.min_taxon_avg_identity:
+        alignment_store.modify_table_filter_taxa_on_avg_identity(min_avg_identity = options.min_taxon_avg_identity)
 
     header, lines = get_output(alignment_store, options.output_type, options.num_reads)
 

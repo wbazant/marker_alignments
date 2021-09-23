@@ -128,6 +128,21 @@ filter_taxa_on_num_markers_and_reads_query = '''
   where a.taxon = t.taxon and t.num_markers >= (?) and t.num_reads >= (?)
 '''
 
+filter_taxa_on_avg_identity_query = '''
+  select a.* from alignment a,
+  (
+    select taxon,
+      avg(top_identity) as avg_identity
+    from   (select a.taxon,
+            max(a.identity) as top_identity
+            from alignment a
+            group by a.query, a.taxon
+            )
+    group  by taxon
+  ) t
+  where a.taxon = t.taxon and t.avg_identity >= (?)
+'''
+
 class AlignmentStore(SqliteStore):
 
     def __init__(self, **kwargs):
@@ -158,6 +173,8 @@ class AlignmentStore(SqliteStore):
     def modify_table_filter_taxa_on_num_markers_and_reads(self, min_num_markers, min_num_reads):
         self._modify_table('num_markers', filter_taxa_on_num_markers_and_reads_query, [min_num_markers, min_num_reads])
 
+    def modify_table_filter_taxa_on_avg_identity(self, min_avg_identity):
+        self._modify_table('avg_identity', filter_taxa_on_avg_identity_query, [min_avg_identity])
 
     def as_marker_coverage(self):
         return self.query(marker_coverage_query)
