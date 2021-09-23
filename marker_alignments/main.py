@@ -132,6 +132,9 @@ def main(argv=sys.argv[1:]):
 
     options=parser.parse_args(argv)
 
+    if options.min_read_mapq and options.min_taxon_fraction_primary_matches:
+        raise ValueError("It us unwise to combine --min-read-mapq and --min-taxon-fraction-primary-matches filters")
+
     if options.output_type not in output_type_options:
         raise ValueError("Unknown output type: " + options.output_type)
 
