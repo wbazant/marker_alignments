@@ -1,5 +1,7 @@
 import sqlite3
 
+from marker_alignments.mcl import clusters
+
 class SqliteStore:
     def __init__(self, db_path = None):
         self.__db_path = db_path
@@ -143,6 +145,68 @@ filter_taxa_on_avg_identity_query = '''
   where a.taxon = t.taxon and t.avg_identity >= (?)
 '''
 
+filter_taxa_on_cluster_averages_query = '''
+  select a.* from alignment a,
+  (
+    select taxon,
+      sum(higher_identity) as num_markers_at_least_cluster_average,
+      sum(lower_identity) as num_markers_below_cluster_average
+    from (
+      select t1.*, t2.avg_cluster_identity, t2.num_taxa, t2.avg_cluster_identity <= avg_identity as higher_identity, t2.avg_cluster_identity > avg_identity as lower_identity
+        from (
+          select id, mc.taxon, mc.marker, count(distinct query) as num_matches, avg(identity) as avg_identity
+            from marker_cluster mc, alignment a
+            where mc.taxon = a.taxon and mc.marker = a.marker
+            group by id, mc.taxon, mc.marker
+        ) t1, (
+        select id, avg(identity) as avg_cluster_identity, count(distinct mc.taxon) as num_taxa
+            from marker_cluster mc, alignment a
+            where mc.taxon = a.taxon and mc.marker = a.marker
+            group by id
+        ) t2
+        where t1.id = t2.id
+       )
+    group by taxon
+  ) t
+  where a.taxon = t.taxon and num_markers_at_least_cluster_average >= (?) * num_markers_below_cluster_average
+'''
+counts_of_common_triples_query = '''
+select at, bt, count(*)
+  from
+  (
+ select 
+       at,
+       bt,
+       am,
+       bm
+from   (select 
+               a.taxon at,
+               b.taxon bt,
+               a.marker am,
+               b.marker bm
+        from   alignment a,
+               alignment b
+        where  a.query = b.query
+        and a.taxon != b.taxon
+        and a.marker != b.marker
+        group by a.query, at, bt, am, bm
+               )
+group  by at, bt, am, bm
+) group by at, bt;
+'''
+
+counts_of_common_markers_query = '''
+select 
+       a.taxon at,
+       a.marker am,
+       b.taxon bt,
+       b.marker bm,
+       count(distinct a.query)
+from   alignment a,
+       alignment b
+where  a.query = b.query
+group by at, bt, am, bm;
+'''
 class AlignmentStore(SqliteStore):
 
     def __init__(self, **kwargs):
@@ -176,6 +240,9 @@ class AlignmentStore(SqliteStore):
     def modify_table_filter_taxa_on_avg_identity(self, min_avg_identity):
         self._modify_table('avg_identity', filter_taxa_on_avg_identity_query, [min_avg_identity])
 
+    def modify_table_filter_taxa_on_cluster_averages(self, min_better_cluster_averages_ratio):
+        self._modify_table('cluster_averages', filter_taxa_on_cluster_averages_query, [min_better_cluster_averages_ratio])
+
     def as_marker_coverage(self):
         return self.query(marker_coverage_query)
 
@@ -199,3 +266,30 @@ class AlignmentStore(SqliteStore):
 
     def as_taxon_all(self,total_reads):
         return self.query(taxon_all_query, [total_reads, total_reads])
+
+    def as_triples(self):
+        return self.query(counts_of_common_triples_query)
+
+    def as_counts_of_common_markers(self):
+        return self.query(counts_of_common_markers_query)
+
+    def cluster_markers_by_matches(self):
+        triples = [(at + "\t" + am, bt + "\t" + bm, v)  for at, am, bt, bm, v in self.query(counts_of_common_markers_query)]
+
+        result = clusters(triples)
+
+        self.do('''
+            create table marker_cluster (
+              id number not null,
+              taxon text not null,
+              marker text not null
+            );''')
+
+        self.start_bulk_write()
+        for ix in range(0, len(result)):
+            cluster = result[ix]
+            cluster_id = ix + 1
+            for x in cluster:
+                taxon, marker = x.split("\t")
+                self.do('insert into marker_cluster (id, taxon, marker) values (?,?,?)', [ cluster_id, taxon, marker])
+        self.end_bulk_write()

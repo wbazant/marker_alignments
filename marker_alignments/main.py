@@ -5,6 +5,7 @@ import re
 import math
 
 from marker_alignments.store import AlignmentStore
+from marker_alignments.mcl import clusters 
 from marker_alignments.refdb_pattern import taxon_and_marker_patterns
 
 from marker_alignments.pysam2 import compute_contribution_to_marker_coverage, compute_alignment_identity
@@ -129,6 +130,7 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--min-taxon-num-reads", type=int, action="store", dest="min_taxon_num_reads", help = "For taxon output: only report taxa with at least min-taxon-num-reads reads")
     parser.add_argument("--min-taxon-fraction-primary-matches", type=float, action="store", dest="min_taxon_fraction_primary_matches", help = "Only keep taxa where no more than min-taxon-fraction-primary-matches fraction of alignments is inferior / secondary")
     parser.add_argument("--min-taxon-avg-match-identity", type=float, action="store", dest="min_taxon_avg_identity", help = "Only keep taxa where the average read identity is at least min-taxon-avg-match-identity")
+    parser.add_argument("--min-taxon-better-cluster-averages-ratio", type=float, action="store", dest="min_taxon_better_cluster_averages_ratio", help = "Only keep taxa where the ratio between markers which have at least average match identity relative to their clusters and markers with identity below average is at least min-taxon-better-cluster-averages-ratio")
 
     options=parser.parse_args(argv)
 
@@ -151,12 +153,6 @@ def main(argv=sys.argv[1:]):
     if options.output_type in ["marker_all","marker_cpm", "taxon_all", "taxon_cpm"] and not options.num_reads:
         raise ValueError("--num-reads required for calculating " + options.output_type)
 
-    if options.min_taxon_num_markers and options.output_type not in ["taxon_read_and_marker_count", "taxon_all"]:
-        raise ValueError("--min-taxon-num-markers only valid for output types: taxon_read_and_marker_count, taxon_all")
-
-    if options.min_taxon_num_reads and options.output_type not in ["taxon_read_and_marker_count", "taxon_all"]:
-        raise ValueError("--min-taxon-num-reads only valid for output types: taxon_read_and_marker_count, taxon_all")
-
     alignment_store = read_alignments(
       alignment_file = pysam.AlignmentFile(options.input_alignment_file),
       sqlite_db_path = options.sqlite_db_path,
@@ -167,6 +163,11 @@ def main(argv=sys.argv[1:]):
       min_query_length = options.min_read_query_length,
       min_match_identity = options.min_read_match_identity,
     )
+
+    alignment_store.cluster_markers_by_matches()
+
+    if options.min_taxon_better_cluster_averages_ratio:
+        alignment_store.modify_table_filter_taxa_on_cluster_averages(min_better_cluster_averages_ratio = options.min_taxon_better_cluster_averages_ratio)
 
     if options.min_taxon_fraction_primary_matches:
         alignment_store.modify_table_filter_taxa_on_multiple_matches(min_fraction_primary_matches = options.min_taxon_fraction_primary_matches)
