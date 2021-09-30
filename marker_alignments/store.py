@@ -152,7 +152,11 @@ filter_taxa_on_cluster_averages_query = '''
       sum(higher_identity) as num_markers_at_least_cluster_average,
       sum(lower_identity) as num_markers_below_cluster_average
     from (
-      select t1.*, t2.avg_cluster_identity, t2.num_taxa, t2.avg_cluster_identity <= avg_identity as higher_identity, t2.avg_cluster_identity > avg_identity as lower_identity
+  select t1.*,
+        t2.avg_cluster_identity,
+        t2.num_taxa,
+        t2.avg_cluster_identity - avg_identity < 1e-6 as higher_identity,
+        t2.avg_cluster_identity - avg_identity >= 1e-6 as lower_identity
         from (
           select id, mc.taxon, mc.marker, count(distinct query) as num_matches, avg(identity) as avg_identity
             from marker_cluster mc, alignment a
