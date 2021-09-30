@@ -178,6 +178,8 @@ def main(argv=sys.argv[1:]):
     if options.min_taxon_avg_identity:
         alignment_store.modify_table_filter_taxa_on_avg_identity(min_avg_identity = options.min_taxon_avg_identity)
 
+    alignment_store.cluster_taxa_by_matches()
+
     header, lines = get_output(alignment_store, options.output_type, options.num_reads)
 
     field_formats = {
