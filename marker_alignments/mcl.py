@@ -247,11 +247,3 @@ def clusters(triples):
 
     labelled_clusters = sorted([[D[ix] for ix in c] for c in clusters], reverse = True, key = len)
     return labelled_clusters
-
-    result = {}
-    for cix in range(0, len(labelled_clusters)):
-        for ix in clusters[cix]:
-            result[D[ix]] = cix
-    return result
-    
-
