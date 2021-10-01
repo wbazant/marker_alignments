@@ -5,6 +5,10 @@ from marker_alignments.mcl import clusters
 
 
 class Mcl(unittest.TestCase):
+
+    def test_null_case(self):
+        self.assertEqual(clusters([]), [])
+
     def test_close_tie(self):
         result = clusters([
           ["t1", "t2", 10],

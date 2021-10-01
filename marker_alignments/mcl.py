@@ -230,6 +230,8 @@ def run_mcl(matrix, expansion=2, inflation=2, loop_value=1,
     return matrix
 
 def clusters(triples):
+    if not triples:
+        return []
     labels = sorted(set(l1 for l1,l2, value in triples).union(set(l2 for l1,l2, value in triples)))
     
     d = {}
