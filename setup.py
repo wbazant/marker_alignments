@@ -7,7 +7,7 @@ with open('LICENSE') as f:
 	license=f.read()
 
 setuptools.setup(name='marker_alignments',
-    version='0.2',
+    version='0.3',
     description="Process and summarise alignments of metagenomic sequencing reads to reference databases of marker genes",
     long_description_content_type="text/markdown",
     url='http://github.com/wbazant/marker_alignments',

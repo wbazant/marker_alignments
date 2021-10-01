@@ -126,16 +126,20 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--min-read-mapq", type=int, action="store", dest="min_read_mapq", help = "when reading the input, skip alignments with MAPQ < min-read-mapq", default=0)
     parser.add_argument("--min-read-query-length", type=int, action="store", dest="min_read_query_length", help = "when reading the input, skip alignments shorter than min-read-query-length", default=0)
     parser.add_argument("--min-read-match-identity", type=float, action="store", dest="min_read_match_identity", help = "when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity", default=0)
-    parser.add_argument("--min-taxon-num-markers", type=int, action="store", dest="min_taxon_num_markers", help = "For taxon output: only report taxa with at least min-taxon-num-markers markers")
-    parser.add_argument("--min-taxon-num-reads", type=int, action="store", dest="min_taxon_num_reads", help = "For taxon output: only report taxa with at least min-taxon-num-reads reads")
+    parser.add_argument("--min-taxon-num-markers", type=int, action="store", dest="min_taxon_num_markers", help = "Only keep taxa with at least min-taxon-num-markers markers")
+    parser.add_argument("--min-taxon-num-reads", type=int, action="store", dest="min_taxon_num_reads", help = "Only keep taxa with at least min-taxon-num-reads reads")
     parser.add_argument("--min-taxon-fraction-primary-matches", type=float, action="store", dest="min_taxon_fraction_primary_matches", help = "Only keep taxa where no more than min-taxon-fraction-primary-matches fraction of alignments is inferior / secondary")
-    parser.add_argument("--min-taxon-avg-match-identity", type=float, action="store", dest="min_taxon_avg_identity", help = "Only keep taxa where the average read identity is at least min-taxon-avg-match-identity")
-    parser.add_argument("--min-taxon-better-cluster-averages-ratio", type=float, action="store", dest="min_taxon_better_cluster_averages_ratio", help = "Only keep taxa where the ratio between markers which have at least average match identity relative to their clusters and markers with identity below average is at least min-taxon-better-cluster-averages-ratio")
+    parser.add_argument("--min-taxon-better-marker-cluster-averages-ratio", type=float, action="store", dest="min_taxon_better_cluster_averages_ratio", help = "Only keep taxa where the ratio between markers which have at least average match identity relative to their clusters and markers with identity below average is at least min-taxon-better-cluster-averages-ratio")
+
+    parser.add_argument("--threshold-avg-match-identity-to-call-known-taxon", type=float, action="store", dest="threshold_identity_to_call_taxon", help = "Threshold on average match identity to return taxon in reference")
+    parser.add_argument("--threshold-num-reads-to-call-unknown-taxon", type=int, action="store", dest="threshold_num_reads_to_call_unknown_taxon", help = "To positively identify an unknown taxon (fits all criteria except match identity) expect this many reads from a taxon cluster")
+    parser.add_argument("--threshold-num-markers-to-call-unknown-taxon", type=int, action="store", dest="threshold_num_markers_to_call_unknown_taxon", help = "To positively identify an unknown taxon (fits all criteria except match identity) expect this many markers from a taxon cluster")
+    parser.add_argument("--threshold-num-taxa-to-call-unknown-taxon", type=int, action="store", dest="threshold_num_taxa_to_call_unknown_taxon", help = "To positively identify an unknown taxon (fits all criteria except match identity) expect this many taxa from a taxon cluster")
 
     options=parser.parse_args(argv)
 
-    if options.min_read_mapq and options.min_taxon_fraction_primary_matches:
-        raise ValueError("It us unwise to combine --min-read-mapq and --min-taxon-fraction-primary-matches filters")
+    if options.min_read_mapq and (options.min_taxon_fraction_primary_matches or options.min_taxon_better_cluster_averages_ratio) :
+        raise ValueError("It us unwise to combine --min-read-mapq and filters that rely on secondary matches!")
 
     if options.output_type not in output_type_options:
         raise ValueError("Unknown output type: " + options.output_type)
@@ -175,10 +179,16 @@ def main(argv=sys.argv[1:]):
     if options.min_taxon_num_markers or options.min_taxon_num_reads:
         alignment_store.modify_table_filter_taxa_on_num_markers_and_reads(min_num_markers = options.min_taxon_num_markers or 0, min_num_reads = options.min_taxon_num_reads or 0)
 
-    if options.min_taxon_avg_identity:
-        alignment_store.modify_table_filter_taxa_on_avg_identity(min_avg_identity = options.min_taxon_avg_identity)
 
     alignment_store.cluster_taxa_by_matches()
+
+    if options.threshold_identity_to_call_taxon or options.threshold_num_reads_to_call_unknown_taxon or options.threshold_num_markers_to_call_unknown_taxon or options.threshold_num_taxa_to_call_unknown_taxon:
+        alignment_store.modify_table_transform_taxa_on_thresholds_and_clusters(
+                threshold_identity = options.threshold_identity_to_call_taxon or 0,
+                min_num_taxa_below_identity = options.threshold_num_taxa_to_call_unknown_taxon or 0,
+                min_num_markers_below_identity = options.threshold_num_markers_to_call_unknown_taxon or 0,
+                min_num_reads_below_identity = options.threshold_num_reads_to_call_unknown_taxon or 0
+        )
 
     header, lines = get_output(alignment_store, options.output_type, options.num_reads)
 

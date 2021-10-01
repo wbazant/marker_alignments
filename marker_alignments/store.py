@@ -209,6 +209,43 @@ select aa.at, aa.bt, cast (sum_shared  as real) / aaa.num_queries from
 ) aaa
 where aa.at = aaa.taxon
 '''
+
+
+transform_taxa_on_thresholds_and_clusters_query = '''
+select t.mapped_taxon as taxon, a.marker, a.query, a.identity, a.coverage from alignment a,
+(
+    select tc.taxon as original_taxon, tc.taxon as mapped_taxon
+    from taxon_cluster tc, alignment al
+    where tc.taxon = al.taxon 
+    group by tc.id, tc.taxon
+    having avg(al.identity) >= (?)
+
+    union
+
+    select 
+      tc.taxon as original_taxon,
+      m.mapped_taxon
+    from taxon_cluster tc,
+    (
+      select id, '?' || group_concat(taxon) as mapped_taxon
+      from (
+        select tc.id,
+          tc.taxon,
+          count(distinct al.marker) as num_markers,
+          count(distinct al.query) as num_reads,
+          avg(al.identity) as avg_identity
+        from taxon_cluster tc, alignment al
+        where tc.taxon = al.taxon 
+        group by tc.id, tc.taxon
+        having avg(al.identity) < (?)
+      ) group by id
+      having
+      (?) > 0 and count(distinct taxon) >= (?) and sum(num_markers) >= (?) and sum(num_reads) >= (?)
+    ) m
+    where tc.id = m.id
+) t
+where a.taxon = t.original_taxon
+'''
 class AlignmentStore(SqliteStore):
 
     def __init__(self, **kwargs):
@@ -244,6 +281,11 @@ class AlignmentStore(SqliteStore):
 
     def modify_table_filter_taxa_on_cluster_averages(self, min_better_cluster_averages_ratio):
         self._modify_table('cluster_averages', filter_taxa_on_cluster_averages_query, [min_better_cluster_averages_ratio])
+
+    def modify_table_transform_taxa_on_thresholds_and_clusters(self, threshold_identity, min_num_taxa_below_identity, min_num_markers_below_identity, min_num_reads_below_identity):
+        try_return_unknown_taxa = 1 if min_num_taxa_below_identity or min_num_markers_below_identity or min_num_reads_below_identity else 0
+        self._modify_table('thresholds_and_clusters', transform_taxa_on_thresholds_and_clusters_query,
+	  [threshold_identity, threshold_identity, try_return_unknown_taxa, min_num_taxa_below_identity, min_num_markers_below_identity, min_num_reads_below_identity])
 
     def as_marker_coverage(self):
         return self.query(marker_coverage_query)
