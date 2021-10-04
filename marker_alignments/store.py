@@ -314,8 +314,9 @@ class AlignmentStore(SqliteStore):
     def cluster_markers_by_matches(self):
         triples = [(at + "\t" + am, bt + "\t" + bm, v)  for at, am, bt, bm, v in self.query(counts_of_common_matches_in_markers_query)]
 
-        result = clusters(triples)
+        self._store_marker_clusters(clusters(triples))
 
+    def _store_marker_clusters(self, clusters):
         self.do('''
             create table marker_cluster (
               id number not null,
@@ -324,8 +325,8 @@ class AlignmentStore(SqliteStore):
             );''')
 
         self.start_bulk_write()
-        for ix in range(0, len(result)):
-            cluster = result[ix]
+        for ix in range(0, len(clusters)):
+            cluster = clusters[ix]
             cluster_id = ix + 1
             for x in cluster:
                 taxon, marker = x.split("\t")
@@ -335,8 +336,9 @@ class AlignmentStore(SqliteStore):
     def cluster_taxa_by_matches(self):
         triples = [(at, bt, v)  for at, bt, v in self.query(counts_of_common_matches_in_taxa_query)]
 
-        result = clusters(triples)
+        self._store_taxon_clusters(clusters(triples))
 
+    def _store_taxon_clusters(self, clusters):
         self.do('''
             create table taxon_cluster (
               id number not null,
@@ -344,8 +346,8 @@ class AlignmentStore(SqliteStore):
             );''')
 
         self.start_bulk_write()
-        for ix in range(0, len(result)):
-            cluster = result[ix]
+        for ix in range(0, len(clusters)):
+            cluster = clusters[ix]
             cluster_id = ix + 1
             for taxon in cluster:
                 self.do('insert into taxon_cluster (id, taxon) values (?,?)', [ cluster_id, taxon])
