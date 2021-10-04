@@ -102,7 +102,7 @@ class StoreTransformTaxa(unittest.TestCase):
                 min_num_markers_below_identity = 0,
                 min_num_reads_below_identity =0)
 
-        self.assertStoreContent(alignment_store, ['?taxon_2,taxon_3', 'taxon_1'])
+        self.assertStoreContent(alignment_store, ['taxon_1'])
 
 if __name__ == '__main__':
     unittest.main()

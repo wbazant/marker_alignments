@@ -233,14 +233,13 @@ select t.mapped_taxon as taxon, a.marker, a.query, a.identity, a.coverage from a
           tc.taxon,
           count(distinct al.marker) as num_markers,
           count(distinct al.query) as num_reads,
-          avg(al.identity) as avg_identity
+          avg(al.identity) >= (?) as is_above_threshold
         from taxon_cluster tc, alignment al
         where tc.taxon = al.taxon 
         group by tc.id, tc.taxon
-        having avg(al.identity) < (?)
       ) group by id
       having
-      (?) > 0 and count(distinct taxon) >= (?) and sum(num_markers) >= (?) and sum(num_reads) >= (?)
+      (?) > 0 and count(distinct taxon) >= (?) and sum(num_markers) >= (?) and sum(num_reads) >= (?) and sum(is_above_threshold) == 0
     ) m
     where tc.id = m.id
 ) t
