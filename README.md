@@ -94,9 +94,9 @@ For inspiration of what read properties are worth filtering on and how to do it,
 ### Definitions
 **taxon** - an organism, in this context an organism that had its genome sequenced, appears in the reference database, and may or may not be present in the sequenced sample
 
-**marker** - a DNA sequence of a gene in a taxon that is assumed to be unique to the taxon
-
 **BUSCO** - a family of genes that are mostly present in each taxon and mostly single-copy
+
+**marker** - a DNA sequence of a gene in a taxon that is assumed to be unique to the taxon. Markers in related taxa can be similar, for example if they belong to the same BUSCO
 
 **reference database** - one of the inputs for an aligner, in this context it's a reference of markers that can be matched to
 
@@ -152,10 +152,52 @@ TODO this will require some visualisation tools.
 Mucor example, demonstrate EukDetect returns nothing which it really should.
 
 
-### Marker clusters
-- empirically, using common alignments
-- how we build a graph and run MCL on it
-- how the competitive mapping is realised through "winning" 
+### A case for using all alignments
+In the model described above, off-target hits happen when an organism in the sample has a version of a BUSCO which is unexactly similar to multiple markers, and this appears in the alignments as a mix of hits. Removing off-target hits requires a grouping of markers. EukDetect uses filtering on alignment length and the MAPQ field (which skews the results further away from off-target hits) followed by a taxonomic grouping of taxa by genus and a comparison on sequence identity.
 
+This approach has a potential cost of sacrificing signal in clipped alignments at the ends of marker sequences (where a read might contain sequence past the end of the marker), and in hits in regions where markers share a sequence (The MAPQ field is defined by SAM manual as an expression of probability that the mapping position is wrong). Additionally, rejecting off-target hits has to be reconciled with sensitivity to presence of multiple related species in the sample.
+
+A method of summarising alignments that can make use of alignments with worse match identity can extract more information from the sequencing data. If we can treat a match with lower identity is evidence for presence of something other than the matched taxon, the more alignments the better - and we only would only need to balance this benefit against its dimishing returns and rising computational cost to obtaining more alignments.
+
+### Marker clusters
+The effect of including secondary alignments is to only add hits to sequences similar to ones already present - after all, they both match on a read. Because identifying off-target hits requires grouping similar markers, secondary alignments provide valuable context for what markers are generally similar to what is present in the sample.
+
+In our method, we run an aligner with as many secondary alignments as we can computationally afford, and then build a similarity graph where all matched markers are nodes and counts of reads that align to both markers are weighted edges. We then pass the triples (marker1, marker2, weight) to a clustering program, MCL.
+
+Using a machine learning program like MCL relieves us from more precise modelling of what it means for two markers to be similar, or relying on prior information on what should be matched together.
+
+MCL produces clusters with several valuable properties:
+- markers in a cluster generally come from a single BUSCO and closely related taxa, but not always 
+- broadly similar markers are grouped in larger clusters
+- unique hits correspond to clusters with single markers
+- a marker sharing reads with multiple putative clusters either gets assigned to one of them, or results in two clusters being merged
+
+
+#### Example 3
+TODO maybe a drawing or a visualisation: a graph with BUSCOs corresponding to a shading of each node, added edges, and a shading or a line around clusters that end up together?
+
+### Using marker clusters to identify off-target hits
+Clusterings of markers which attract similar matches allows for classifying taxa by having each marker cluster "vote" for its taxon, based on how that taxon's markers do in that cluster. This can be done in a number of ways as long as the marker clusters are required to only be approximately correct.
+
+We choose to measure how good an alignment is through match identity - a number of bases that agree between query and reference divided by the alignment length. Then for each marker cluster, we compute an average for all matches in the cluster, as well as an average for matches in each marker. Then we discard taxa where less than half of each taxon's markers that are at least average in their cluster.
+
+We can expect that this filter will work well enough to discard the additional taxa introduced to the result when setting the aligner to report secondary alignments, since they are on average inferior. Similarly, a version of a BUSCO that is overall inferior but has a locally better subsequence can be expected to accrue bad matches, get paired up with overall better versions of the BUSCO in the marker clustering process, and then help get its taxon rejected.
+
+TODO a diagram or example
+
+### Implementation
+
+Here we pro
+
+### Comparison with EukDetect
+We apply our
+
+### TODO summary of data loaded? Or maybe one good dataset
+- how many samples, whi
+
+### Shortcomings and potential future work
+We add an up-front threshold on alignment length of 60 bases. This is a filter borrowed from EukDetect and we do not have a good rationale for keeping the filter, except without the filter, some samples (our analysis of NICU NEC dataset) contain a lot of matches to taxa that are not plausibly present given the sequenced samples. We suspect they might be incorrect annotations, or annotations that end with common elements (like binding sites) but we have not investigated further.
+
+We also see an occasional inclusion of matches to model organisms. We suspect these are BUSCOs that are commonly present, but not commonly annotated. They happen rarely enough to occur twice for any dataset, so an ad hoc criterion of (TODO implement this!) twenty reads for taxa reported only in one sample per dataset removes these matches and keeps matches where we have much more confidence despite them being present only in one dataset.
 
 
