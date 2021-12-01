@@ -5,14 +5,14 @@ import re
 import math
 
 from marker_alignments.store import AlignmentStore
+from marker_alignments.write import write, output_type_options
 from marker_alignments.mcl import clusters 
 from marker_alignments.refdb_pattern import taxon_and_marker_patterns
 
 from marker_alignments.pysam2 import compute_contribution_to_marker_coverage, compute_alignment_identity
 
-
 def next_g(search):
-    return next(g for g in search.groups() if g is not None);
+    return next(g for g in search.groups() if g is not None)
 
 def taxon_and_marker(reference_name, pattern_taxon, pattern_marker, marker_to_taxon):
 
@@ -76,38 +76,6 @@ def read_marker_to_taxon(path):
             (marker, taxon) = line.rstrip().split("\t")
             result[marker] = taxon
     return result
-
-output_type_options = ["marker_coverage", "marker_read_count", "marker_cpm", "marker_all", "taxon_coverage", "taxon_read_and_marker_count", "taxon_cpm", "taxon_all"]
-
-def get_output(alignment_store, output_type, num_reads):
-    if output_type == "marker_coverage":
-        header = ["taxon", "marker", "marker_coverage"]
-        lines = alignment_store.as_marker_coverage()
-    elif output_type == "marker_read_count":
-        header = ["taxon", "marker", "marker_read_count", "marker_avg_identity"]
-        lines = alignment_store.as_marker_read_count()
-    elif output_type == "marker_cpm":
-        header = ["taxon", "marker", "marker_cpm"]
-        lines = alignment_store.as_marker_cpm(num_reads)
-    elif output_type == "marker_all":
-        header = ["taxon", "marker", "marker_coverage", "marker_cpm", "marker_read_count", "marker_avg_identity"]
-        lines = alignment_store.as_marker_all(num_reads)
-    elif output_type == "taxon_coverage":
-        header = ["taxon", "coverage"]
-        lines = alignment_store.as_taxon_coverage()
-    elif output_type == "taxon_read_and_marker_count":
-        header = ["taxon", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
-        lines = alignment_store.as_taxon_read_and_marker_count()
-    elif output_type == "taxon_cpm":
-        header = ["taxon", "cpm"]
-        lines = alignment_store.as_taxon_cpm(num_reads)
-    elif output_type == "taxon_all":
-        header = ["taxon", "coverage", "cpm", "taxon_num_reads", "taxon_num_markers", "taxon_max_reads_in_marker"]
-        lines = alignment_store.as_taxon_all(num_reads)
-    else:
-        raise ValueError("Unknown output type: " + output_type)
-
-    return header, lines
 
 def main(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(
@@ -190,24 +158,4 @@ def main(argv=sys.argv[1:]):
                 min_num_reads_below_identity = options.threshold_num_reads_to_call_unknown_taxon or 0
         )
 
-    header, lines = get_output(alignment_store, options.output_type, options.num_reads)
-
-    field_formats = {
-      "taxon" : "",
-      "marker": "",
-      "marker_cpm": ":.6f",
-      "marker_coverage": ":.6f",
-      "marker_read_count": ":.2f",
-      "marker_avg_identity": ":.6f",
-      "cpm" : ":.6f",
-      "coverage" : ":.6f",
-      "taxon_num_reads": ":.6f",
-      "taxon_num_markers": ":d",
-      "taxon_max_reads_in_marker": ":.6f",
-    }
-    formatter="\t".join(['{' + field_formats[field] +'}' for field in header]) + "\n"
-    with open(options.output_path, 'w') as f:
-        f.write("\t".join(header) + "\n")
-        for line in lines:
-            f.write(formatter.format(*line))
-
+    write(alignment_store, options.output_type, options.output_path, options.num_reads)

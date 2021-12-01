@@ -9,7 +9,8 @@ input_path = dir_path + "/data/example.sam"
 import re
 import tempfile
 
-from marker_alignments.main import main, output_type_options
+from marker_alignments.write import output_type_options
+from marker_alignments.main import main
 
 def read_lines_and_remove(path):
     if not os.path.isfile(path):

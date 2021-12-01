@@ -1,7 +1,7 @@
 import unittest
 import pysam
 
-from marker_alignments.main import get_output, output_type_options as output_types
+from marker_alignments.write import get_output, output_type_options as output_types
 from marker_alignments.store import AlignmentStore
 
 num_reads = 1000000
