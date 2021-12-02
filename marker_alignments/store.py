@@ -214,6 +214,17 @@ class AlignmentStore(SqliteStore):
               identity real not null,
               coverage real not null
             );''')
+        self.do('''
+            create table marker_cluster (
+              id number not null,
+              taxon text not null,
+              marker text not null
+            );''')
+        self.do('''
+            create table taxon_cluster (
+              id number not null,
+              taxon text not null
+            );''')
         
     def add_alignment(self, taxon, marker, query, identity, coverage):
         self.do('insert into alignment (taxon, marker, query, identity, coverage) values (?,?,?,?,?)', [ taxon, marker, query, identity, coverage])
@@ -280,12 +291,6 @@ class AlignmentStore(SqliteStore):
         self._store_marker_clusters(clusters(triples))
 
     def _store_marker_clusters(self, clusters):
-        self.do('''
-            create table marker_cluster (
-              id number not null,
-              taxon text not null,
-              marker text not null
-            );''')
 
         self.start_bulk_write()
         for ix in range(0, len(clusters)):
@@ -302,11 +307,6 @@ class AlignmentStore(SqliteStore):
         self._store_taxon_clusters(clusters(triples))
 
     def _store_taxon_clusters(self, clusters):
-        self.do('''
-            create table taxon_cluster (
-              id number not null,
-              taxon text not null
-            );''')
 
         self.start_bulk_write()
         for ix in range(0, len(clusters)):

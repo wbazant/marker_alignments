@@ -12,6 +12,7 @@ r2=('taxon_2', 'marker_2', 'second_query_id', 0.933333, 0.02327)
 r3=('taxon_2', 'marker_3', 'third_query_id', 0.933333, 0.074)
 r4=('taxon_2', 'marker_3', 'fourth_query_id', 0.933333, 0.074)
 r5=('taxon_3', 'marker_1', 'fifth_query_id', 0.95, 0.02)
+r6=('taxon_3', 'marker_1', 'query_id', 0.95, 0.02)
 
 pattern_taxon = re.compile("^([^:]+):[^:]+$")
 pattern_marker = re.compile("^[^:]+:([^:]+)$")
@@ -26,7 +27,7 @@ class ReadAlignments(unittest.TestCase):
     def test_example(self):
         sam = pysam.AlignmentFile(dir_path + "/data/example.sam")
         alignment_store = read_alignments(sam, None, pattern_taxon, pattern_marker, marker_to_taxon_id, 0,0,0)
-        self.assertStoreContent(alignment_store, [r1,r2,r3,r4,r5])
+        self.assertStoreContent(alignment_store, [r1,r2,r3,r4,r5,r6])
 
     def test_filter_mapq(self):
         sam = pysam.AlignmentFile(dir_path + "/data/example.sam")
@@ -41,7 +42,7 @@ class ReadAlignments(unittest.TestCase):
     def test_filter_match_identity(self):
         sam = pysam.AlignmentFile(dir_path + "/data/example.sam")
         alignment_store = read_alignments(sam, None, pattern_taxon, pattern_marker, marker_to_taxon_id,  min_mapq = 0, min_query_length = 0, min_match_identity = 0.94 )
-        self.assertStoreContent(alignment_store, [r1,r5])
+        self.assertStoreContent(alignment_store, [r1,r5,r6])
 
 
 
