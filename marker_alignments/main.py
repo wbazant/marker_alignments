@@ -77,7 +77,7 @@ def read_marker_to_taxon(path):
             result[marker] = taxon
     return result
 
-def main(argv=sys.argv[1:]):
+def parse_arguments(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(
       description="summarize_marker_alignments - process and summarise alignments of metagenomic sequencing reads to reference databases of marker genes",
       formatter_class = argparse.RawDescriptionHelpFormatter,
@@ -103,8 +103,11 @@ def main(argv=sys.argv[1:]):
     parser.add_argument("--threshold-num-reads-to-call-unknown-taxon", type=int, action="store", dest="threshold_num_reads_to_call_unknown_taxon", help = "To positively identify an unknown taxon (fits all criteria except match identity) expect this many reads from a taxon cluster")
     parser.add_argument("--threshold-num-markers-to-call-unknown-taxon", type=int, action="store", dest="threshold_num_markers_to_call_unknown_taxon", help = "To positively identify an unknown taxon (fits all criteria except match identity) expect this many markers from a taxon cluster")
     parser.add_argument("--threshold-num-taxa-to-call-unknown-taxon", type=int, action="store", dest="threshold_num_taxa_to_call_unknown_taxon", help = "To positively identify an unknown taxon (fits all criteria except match identity) expect this many taxa from a taxon cluster")
+    result = parser.parse_args(argv)
+    return result
 
-    options=parser.parse_args(argv)
+def main(argv=sys.argv[1:]):
+    options=parse_arguments(argv)
 
     if options.min_read_mapq and (options.min_taxon_fraction_primary_matches or options.min_taxon_better_cluster_averages_ratio) :
         raise ValueError("It us unwise to combine --min-read-mapq and filters that rely on secondary matches!")

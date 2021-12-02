@@ -61,14 +61,18 @@ markers = [ marker for marker in alignment_store.query('select distinct marker f
 
 ## Filtering the results
 
-
-| Parameter  | Filtering level | Description |
-| ------------- | ------------- | ------------ |
-| --min-read-mapq  | aligned read   | MAPQ field in the alignment file |
-| --min-read-query-length  | aligned read | Length of the alignment | 
-| --min-read-match-identity  | aligned read  | Fraction of the alignment with matching bases |
-| --min-taxon-num-markers | taxon | Number of markers where the taxon had aligned reads |
-| --min-taxon-num-reads | taxon | Number of reads aligned to taxon's markers |
+| Parameter  | Description |
+| ------------- | ------------- | 
+|`--min-read-mapq`                                   |when reading the input, skip alignments with MAPQ < min-read-mapq                                                                                                                                               |
+|`--min-read-query-length`                           |when reading the input, skip alignments shorter than min-read-query-length                                                                                                                                      |
+|`--min-read-match-identity`                         |when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity                                                                            |
+|`--min-taxon-num-markers`                           |Only keep taxa with at least min-taxon-num-markers markers                                                                                                                                                      |
+|`--min-taxon-num-reads`                             |Only keep taxa with at least min-taxon-num-reads reads                                                                                                                                                          |
+|`--min-taxon-fraction-primary-matches`              |Only keep taxa where no more than min-taxon-fraction-primary-matches fraction of alignments is inferior / secondary                                                                                             |
+|`--min-taxon-better-marker-cluster-averages-ratio`  |Only keep taxa where the ratio between markers which have at least average match identity relative to their clusters and markers with identity below average is at least min-taxon-better-cluster-averages-ratio|
+|`--threshold-avg-match-identity-to-call-known-taxon`|Threshold on average match identity to return taxon in reference                                                                                                                                                |
+|`--threshold-num-reads-to-call-unknown-taxon`       |To positively identify an unknown taxon (fits all criteria except match identity) expect this many reads from a taxon cluster                                                                                   |
+|`--threshold-num-markers-to-call-unknown-taxon`     |To positively identify an unknown taxon (fits all criteria except match identity) expect this many markers from a taxon cluster                                                                                 |
 
 ### Custom refdb
 The default `--refdb-format` is `generic`, which tries to produce nice names, but may or may not match how you want it to. Set `--refdb-format` to `no-split` if you don't want the nice names, and if you want the taxa to be recognised really correctly, list a lookup table under `--refdb-marker-to-taxon-path`.
