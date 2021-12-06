@@ -63,6 +63,8 @@ A simpler alternative is
 but it does not deal with unknown taxa quite as well.
 
 All filtering options are as follows:
+
+| column | description |
 | ------------- | ------------- | 
 |`--min-read-mapq`                                   |when reading the input, skip alignments with MAPQ < min-read-mapq                                                                                                                                               |
 |`--min-read-query-length`                           |when reading the input, skip alignments shorter than min-read-query-length                                                                                                                                      |
