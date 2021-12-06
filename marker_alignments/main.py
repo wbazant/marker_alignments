@@ -113,7 +113,7 @@ def main(argv=sys.argv[1:]):
         raise ValueError("It us unwise to combine --min-read-mapq and filters that rely on secondary matches!")
 
     if options.output_type not in output_type_options:
-        raise ValueError("Unknown output type: " + options.output_type)
+        raise ValueError("Unknown output type: " + options.output_type + ". Please choose one of the following: " + ", ".join(output_type_options))
 
     if options.refdb_format:
         (tp, mp) = taxon_and_marker_patterns(options.refdb_format)
