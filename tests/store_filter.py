@@ -13,13 +13,30 @@ class StoreFilter(unittest.TestCase):
         r111 = ('taxon_1', 'marker_1','query_1', 1.0, 1.0)
         r112 = ('taxon_1', 'marker_1','query_2', 1.0, 1.0)
         r223 = ('taxon_2', 'marker_2','query_3', 1.0, 1.0)
+        r223a = ('taxon_2', 'marker_2','query_3', 1.0, 1.0)
+        r334 = ('taxon_3', 'marker_3','query_4', 1.0, 1.0)
 
         alignment_store = AlignmentStore()
-        for r in [r111, r112, r223]:
+        for r in [r111, r112, r223, r223a, r334]:
           alignment_store.add_alignment(*r)
-        self.assertStoreContent(alignment_store, [r111, r112, r223])
+        self.assertStoreContent(alignment_store, [r111, r112, r223, r223a, r334])
 
-        alignment_store.modify_table_filter_taxa_on_num_markers_and_reads(min_num_markers = 1, min_num_reads = 2)
+        alignment_store.modify_table_filter_taxa_on_num_markers_reads_and_alignments(min_num_markers = 1, min_num_reads = 2, min_num_alignments = 1)
+        self.assertStoreContent(alignment_store, [r111, r112])
+
+    def test_filter_alignments(self):
+        r111 = ('taxon_1', 'marker_1','query_1', 1.0, 1.0)
+        r112 = ('taxon_1', 'marker_1','query_2', 1.0, 1.0)
+        r223 = ('taxon_2', 'marker_2','query_3', 1.0, 1.0)
+        r223a = ('taxon_2', 'marker_2','query_3', 1.0, 1.0)
+        r334 = ('taxon_3', 'marker_3','query_4', 1.0, 1.0)
+
+        alignment_store = AlignmentStore()
+        for r in [r111, r112, r223, r223a, r334]:
+          alignment_store.add_alignment(*r)
+        self.assertStoreContent(alignment_store, [r111, r112, r223, r223a, r334])
+
+        alignment_store.modify_table_filter_taxa_on_num_markers_reads_and_alignments(min_num_markers = 1, min_num_reads = 2, min_num_alignments = 2)
         self.assertStoreContent(alignment_store, [r111, r112])
 
     def test_filter_markers(self):
@@ -31,7 +48,7 @@ class StoreFilter(unittest.TestCase):
         for r in [r111, r122, r223]:
           alignment_store.add_alignment(*r)
 
-        alignment_store.modify_table_filter_taxa_on_num_markers_and_reads(min_num_markers = 2, min_num_reads = 0)
+        alignment_store.modify_table_filter_taxa_on_num_markers_reads_and_alignments(min_num_markers = 2, min_num_reads = 0, min_num_alignments = 0)
         self.assertStoreContent(alignment_store, [r111, r122])
 
     def test_filter_markers_best_matches_only(self):
@@ -42,7 +59,7 @@ class StoreFilter(unittest.TestCase):
         alignment_store = AlignmentStore()
         for r in [r111, r122, r222]:
           alignment_store.add_alignment(*r)
-        alignment_store.modify_table_filter_taxa_on_num_markers_and_reads(min_num_markers = 2, min_num_reads = 0)
+        alignment_store.modify_table_filter_taxa_on_num_markers_reads_and_alignments(min_num_markers = 2, min_num_reads = 0, min_num_alignments = 0)
         self.assertStoreContent(alignment_store, [])
 
     def test_filter_multiple_matches(self):

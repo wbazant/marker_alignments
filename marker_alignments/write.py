@@ -25,8 +25,8 @@ marker_query_template='''
 '''
 s_cov="sum(coverage) as marker_coverage"
 p_cov="sum(a.coverage * a.identity * a.identity) / (m.total_weight_for_query) as coverage"
-s_mrc="sum(weight_fraction) as marker_read_count, avg(identity) as marker_avg_identity"
-p_wf="sum(a.identity * a.identity) / (m.total_weight_for_query) as weight_fraction"
+s_mrc="sum(alignment_count) as marker_alignment_count, sum(weight_fraction) as marker_read_count, avg(identity) as marker_avg_identity"
+p_wf="sum(a.identity * a.identity) / (m.total_weight_for_query) as weight_fraction, count(*) as alignment_count"
 s_cpm="sum(coverage) / (?) * 1000000 as marker_cpm"
 
 sqls['marker_coverage'] = marker_query_template.format(s_cov, p_cov)
@@ -45,7 +45,7 @@ taxon_query_template='''
 '''
 
 a_cov = "avg(marker_coverage) as coverage"
-a_tnm = "sum(marker_read_count) as taxon_num_reads, count(marker) as taxon_num_markers, max(marker_read_count) as taxon_max_reads_in_marker"
+a_tnm = "sum(marker_read_count) as taxon_num_reads, sum(marker_alignment_count) as taxon_num_alignments, count(marker) as taxon_num_markers, max(marker_read_count) as taxon_max_reads_in_marker"
 a_cpm = "avg(marker_coverage) / (?) * 1000000 as cpm"
 sqls['taxon_coverage'] = taxon_query_template.format(a_cov, sqls['marker_coverage'])
 sqls['taxon_read_and_marker_count'] = taxon_query_template.format(a_tnm, sqls['marker_read_count'])
@@ -126,9 +126,11 @@ field_formats = {
   "marker_cpm": ":.6f",
   "marker_coverage": ":.6f",
   "marker_read_count": ":.2f",
+  "marker_alignment_count": ":d",
   "marker_avg_identity": ":.6f",
   "cpm" : ":.6f",
   "coverage" : ":.6f",
+  "taxon_num_alignments": ":d",
   "taxon_num_reads": ":.6f",
   "taxon_num_markers": ":d",
   "taxon_max_reads_in_marker": ":.6f",

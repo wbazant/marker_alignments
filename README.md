@@ -55,11 +55,11 @@ Recommended presets are:
 if using single best alignment per query.
 
 
-If using multiple alignments, the following options are recommended if you're okay with relying on MCL clusters:
-` --min-read-query-length 60 --min-taxon-num-markers 2 --min-taxon-num-reads 4 --min-taxon-better-marker-cluster-averages-ratio 1.01 --threshold-avg-match-identity-to-call-known-taxon 0.97  --threshold-num-taxa-to-call-unknown-taxon 1 --threshold-num-markers-to-call-unknown-taxon 4     --threshold-num-reads-to-call-unknown-taxon 8`
+If using multiple alignments, the following preset recommended if you're okay with relying on MCL clusters:
+` --min-read-query-length 60 --min-taxon-num-markers 2 --min-taxon-num-reads 2 --min-taxon-better-marker-cluster-averages-ratio 1.01 --threshold-avg-match-identity-to-call-known-taxon 0.97  --threshold-num-taxa-to-call-unknown-taxon 1 --threshold-num-markers-to-call-unknown-taxon 4     --threshold-num-reads-to-call-unknown-taxon 8`
 
 A simpler alternative is 
-` --min-read-query-length 60 --min-taxon-num-markers 2 --min-taxon-num-reads 4 --min-taxon-fraction-primary-matches 0.5` 
+` --min-read-query-length 60 --min-taxon-num-markers 2 --min-taxon-num-reads 2 --min-taxon-fraction-primary-matches 0.5` 
 but it does not deal with unknown taxa quite as well.
 
 All filtering options are as follows:
@@ -71,6 +71,7 @@ All filtering options are as follows:
 |`--min-read-match-identity`                         |when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity                                                                            |
 |`--min-taxon-num-markers`                           |Only keep taxa with at least min-taxon-num-markers markers                                                                                                                                                      |
 |`--min-taxon-num-reads`                             |Only keep taxa with at least min-taxon-num-reads reads                                                                                                                                                          |
+|`--min-taxon-num-alignments`                        |Only keep taxa with at least min-taxon-num-alignments alignments                                                                                                                                                          |
 |`--min-taxon-fraction-primary-matches`              |Only keep taxa where no more than min-taxon-fraction-primary-matches fraction of alignments is inferior / secondary                                                                                             |
 |`--min-taxon-better-marker-cluster-averages-ratio`  |Only keep taxa where the ratio between markers which have at least average match identity relative to their clusters and markers with identity below average is at least min-taxon-better-cluster-averages-ratio|
 |`--threshold-avg-match-identity-to-call-known-taxon`|Threshold on average match identity to return taxon in reference                                                                                                                                                |

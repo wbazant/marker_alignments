@@ -64,7 +64,7 @@ filter_taxa_on_multiple_matches_query = '''
 '''
 
 # markers with only inferior alignments don't count
-filter_taxa_on_num_markers_and_reads_query = '''
+filter_taxa_on_num_markers_reads_and_alinments_query = '''
   select a.* from alignment a,
   (
     select taxon,
@@ -83,8 +83,14 @@ filter_taxa_on_num_markers_and_reads_query = '''
       having s.top_identity - max(a.identity) < 1e-6
       )
     group  by taxon
-  ) t
-  where a.taxon = t.taxon and t.num_markers >= (?) and t.num_reads >= (?)
+  ) t,
+  (
+    select taxon,
+    count(*) as num_alignments
+    from alignment
+    group by taxon
+  ) t2
+  where a.taxon = t.taxon and a.taxon = t2.taxon and t.num_markers >= (?) and t.num_reads >= (?) and t2.num_alignments >= (?)
 '''
 
 filter_taxa_on_avg_identity_query = '''
@@ -240,8 +246,8 @@ class AlignmentStore(SqliteStore):
     def modify_table_filter_taxa_on_multiple_matches(self, min_fraction_primary_matches):
         self._modify_table('multiple_matches', filter_taxa_on_multiple_matches_query, [min_fraction_primary_matches])
 
-    def modify_table_filter_taxa_on_num_markers_and_reads(self, min_num_markers, min_num_reads):
-        self._modify_table('num_markers', filter_taxa_on_num_markers_and_reads_query, [min_num_markers, min_num_reads])
+    def modify_table_filter_taxa_on_num_markers_reads_and_alignments(self, min_num_markers, min_num_reads, min_num_alignments):
+        self._modify_table('num_markers', filter_taxa_on_num_markers_reads_and_alinments_query, [min_num_markers, min_num_reads, min_num_alignments])
 
     def modify_table_filter_taxa_on_avg_identity(self, min_avg_identity):
         self._modify_table('avg_identity', filter_taxa_on_avg_identity_query, [min_avg_identity])

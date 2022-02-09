@@ -96,6 +96,7 @@ def parse_arguments(argv=sys.argv[1:]):
     parser.add_argument("--min-read-match-identity", type=float, action="store", dest="min_read_match_identity", help = "when reading the input, skip alignments where the proportion of matching bases in the alignment is less than min-read-match-identity", default=0)
     parser.add_argument("--min-taxon-num-markers", type=int, action="store", dest="min_taxon_num_markers", help = "Only keep taxa with at least min-taxon-num-markers markers")
     parser.add_argument("--min-taxon-num-reads", type=int, action="store", dest="min_taxon_num_reads", help = "Only keep taxa with at least min-taxon-num-reads reads")
+    parser.add_argument("--min-taxon-num-alignments", type=int, action="store", dest="min_taxon_num_alignments", help = "Only keep taxa with at least min-taxon-num-alignments alignments")
     parser.add_argument("--min-taxon-fraction-primary-matches", type=float, action="store", dest="min_taxon_fraction_primary_matches", help = "Only keep taxa where no more than min-taxon-fraction-primary-matches fraction of alignments is inferior / secondary")
     parser.add_argument("--min-taxon-better-marker-cluster-averages-ratio", type=float, action="store", dest="min_taxon_better_cluster_averages_ratio", help = "Only keep taxa where the ratio between markers which have at least average match identity relative to their clusters and markers with identity below average is at least min-taxon-better-cluster-averages-ratio")
 
@@ -147,8 +148,8 @@ def main(argv=sys.argv[1:]):
     if options.min_taxon_fraction_primary_matches:
         alignment_store.modify_table_filter_taxa_on_multiple_matches(min_fraction_primary_matches = options.min_taxon_fraction_primary_matches)
 
-    if options.min_taxon_num_markers or options.min_taxon_num_reads:
-        alignment_store.modify_table_filter_taxa_on_num_markers_and_reads(min_num_markers = options.min_taxon_num_markers or 0, min_num_reads = options.min_taxon_num_reads or 0)
+    if options.min_taxon_num_markers or options.min_taxon_num_reads or options.min_taxon_num_alignments:
+        alignment_store.modify_table_filter_taxa_on_num_markers_reads_and_alignments(min_num_markers = options.min_taxon_num_markers or 0, min_num_reads = options.min_taxon_num_reads or 0, min_num_alignments = options.min_taxon_num_alignments or 0)
 
 
     alignment_store.cluster_taxa_by_matches()
