@@ -4,51 +4,72 @@ This a Python package to process and summarise alignments of metagenomic sequenc
 The package was developed in the context of looking for eukaryotes - most of the facilities are for producing good guesses from small amounts of potentially unreliable information. There are read level filters, clustering facilities for making sense of multiple alignments per query, and a number of thresholds.
 
 ## Installation
-First clone this repository, then install the dependencies and this package:
-```
-git clone git@github.com:wbazant/marker_alignments.git
-cd marker_alignments
 
-pip3 install -r requirements.txt .
+To install via pip:
+```
+pip install marker_alignments
 ```
 
 ## Usage
 
-### Basic example
-```
-marker_alignments --input tests/data/example.sam --output /dev/stdout
-```
+### Introduction
 
-It produces a coverage report for each reference in the alignments file.
-
-
-### Example (EukDetect reads)
-
-Here is how we can align a FASTA to a reference database bundled with [EukDetect](https://github.com/allind/EukDetect), then summarise it at taxon level:
+Download a small example alignment file, and run `marker_alignments` with most basic options:
 
 ```
+wget "https://raw.githubusercontent.com/wbazant/marker_alignments/main/tests/data/example.sam"
+
+marker_alignments --input example.sam --output /dev/stdout
+```
+
+If the package installed correctly, you should see a coverage report for each reference in the alignments file. `marker_alignments --help` should show you all filtering options.
+
+
+### Detecting eukaryotes
+
+First download the EukDetect reference database following [EukDetect installation instructions](https://github.com/allind/EukDetect).
+
+Then follow this example to download an example metagenomic file, run alignments to a reference database bundled with EukDetect, and obtain a profile using suitable filtering options:
+
+```
+REFDB_LOCATION="eukdb"
+
+wget "ftp.sra.ebi.ac.uk/vol1/fastq/ERR274/009/ERR2749179/ERR2749179_1.fastq.gz"
+wget "ftp.sra.ebi.ac.uk/vol1/fastq/ERR274/009/ERR2749179/ERR2749179_2.fastq.gz"
+gunzip *gz
+FASTQ_1="ERR2749179_1.fastq"
+FASTQ_2="ERR2749179_2.fastq"
 
 bowtie2 --omit-sec-seq --no-discordant --no-unal \
-  -x ncbi_eukprot_met_arch_markers.fna \
-  -1 ERR2749179_1.fastq \
-  -2 ERR2749179_2.fastq \
-  -S ERR2749179-eukprot.sam 
+  -x $REFDB_LOCATION/ncbi_eukprot_met_arch_markers.fna \
+  -k10,10
+  -1 ERR2749179_1.fastq.gz \
+  -2 ERR2749179_2.fastq.gz \
+  -S ERR2749179.sam 
 
-marker_alignments --input ERR2749179-eukprot.sam --output ERR2749179-eukprot-taxa.tsv \
+FILTERING_OPTS="--min-read-query-length 60 --min-taxon-num-markers 2 --min-taxon-num-reads 2 --min-taxon-better-marker-cluster-averages-ratio 1.01 --threshold-avg-match-identity-to-call-known-taxon 0.97  --threshold-num-taxa-to-call-unknown-taxon 1 --threshold-num-markers-to-call-unknown-taxon 4     --threshold-num-reads-to-call-unknown-taxon 8"
+
+marker_alignments --input ERR2749179.sam --output ERR2749179.taxa.tsv \
   --refdb-format eukprot \
-  --refdb-marker-to-taxon-path busco_taxid_link.txt \
+  --refdb-marker-to-taxon-path $REFDB_LOCATION/busco_taxid_link.txt \
   --output-type taxon_all \
-  --num-reads $(grep -c '^@' ERR2749179_1.fastq) \
+  --num-reads $(grep -c '^@' $FASTQ_1) \
+  $FILTERING_OPTS
 ```
 
-If this is your use case, try the Nextflow pipeline [wbazant/marker-alignments-nextflow](https://github.com/wbazant/marker-alignments-nextflow).
+To do this for multiple samples, try the Nextflow pipeline [wbazant/CORRAL](https://github.com/wbazant/CORRAL).
 
 
-## How to use this package
-The basic workflow is to give it an alignment file, and look at reports produced. Setting up various filters reduces noise enough that the taxonomic profile obtained can be passed on to other tools, but this is still research
+### Other uses
+The basic workflow type supported by this package is to give it an alignment file, and look at reports produced. 
+
+There are multiple filtering options aiming to reduce noise enough that the resulting taxonomic profile can be passed on to other tools. Alternatively, you can specify `--output-type pairs_of_taxa_shared_queries` or `output-type taxa_in_marker_clusters` and look at shared alignments between the queries, and get a detailed view of what the sequences in your metagenomic sample are most similar to.
+
+This is research software, and its usefulness apart from its original context of detecting eukaryotes is not yet known :). Reference sequences are grouped by taxon, so its use with another reference database requires the provision of options `--refdb-format` or `--refdb-marker-to-taxon-path`. 
 
 
-### Filtering options
+## Filtering options
+
 Recommended presets are:
 
 `" --min-read-mapq 30 --min-read-query-length 60 --min-read-match-identity 0.9 --min-taxon-num-markers 2"`
@@ -89,7 +110,7 @@ An unknown species will match as a mixture of results. The clustering option `--
 The suggested value of 0.97 has been chosen empirically. Is a bit lower than CCMetagen's 0.9841 quoted from [Vu et al (2019)](https://pubmed.ncbi.nlm.nih.gov/29955203/), as this number was calculated from ribosomal subunits, we're not aware of a study that calculates average identity for BUSCOs. Most unknown taxa seem to match at around 0.9 identity, and a value 0.95 still permitted an unknown <i>Penicillinum</i> species to appear as a mixture.
 
 3. Threshold of evidence for making claims
-Claiming a eukaryote is present based on one read would be preposterous! It's not clear how many reads are "enough" to make a claim, and actually, no number of reads is enough because off-target matches follow patterns. We suggest EukDetect's rule of 4 reads in 2 markers, and doubling it for unknown species. You can also only report unknown species if the results indicate its two nearest taxa with `--threshold-num-taxa-to-call-unknown-taxon` option.
+Claiming a eukaryote is present based on one read would be preposterous! It's not clear how many reads are "enough" to make a claim, and actually, no number of reads is enough because off-target matches follow patterns. We suggest gaining evidence from at least two markers, and a higher standard for ambiguous hits coming from species not in the reference. You can also only report unknown species if the results indicate its two nearest taxa with `--threshold-num-taxa-to-call-unknown-taxon` option.
 
 
 ### Other info
@@ -114,4 +135,8 @@ I copied the package setup from EukDetect, and developed the package mostly in t
 An idea for what outputs might be useful to users comes jointly from these three tools.
 
 For inspiration of what read properties are worth filtering on and how to do it, some credit goes to [TALON's `transcript_utils` file](https://github.com/mortazavilab/TALON/blob/master/src/talon/transcript_utils.py).
+
+## How to cite
+
+We now have a preprint on biorxiv: https://doi.org/10.1101/2022.03.09.483664 .
 
